@@ -1,14 +1,20 @@
 
 
+
+
 Operations                                                       T. Dahm
 Internet-Draft                                                    A. Ota
-Expires: January 2, 2016                                      Google Inc
-                                                          D. Medway Gash
+Intended status: Standards Track                              Google Inc
+Expires: December 14, 2015                                D. Medway Gash
                                                      Cisco Systems, Inc.
-                                                               July 2015
+                                                               D. Carrel
+
+                                                                L. Grant
+                                                           June 12, 2015
 
 
                           The TACACS+ Protocol
+                  draft-ietf-opsawg-dahm-tacacs-00.txt
 
 Abstract
 
@@ -33,7 +39,7 @@ Status of This Memo
    time.  It is inappropriate to use Internet-Drafts as reference
    material or to cite them other than as "work in progress."
 
-   This Internet-Draft will expire on January 2, 2016.
+   This Internet-Draft will expire on December 14, 2015.
 
 Copyright Notice
 
@@ -44,45 +50,92 @@ Copyright Notice
    Provisions Relating to IETF Documents
    (http://trustee.ietf.org/license-info) in effect on the date of
    publication of this document.  Please review these documents
+
+
+
+Dahm, et al.            Expires December 14, 2015               [Page 1]
+
+Internet-Draft            The TACACS+ Protocol                 June 2015
+
+
    carefully, as they describe your rights and restrictions with respect
    to this document.  Code Components extracted from this document must
    include Simplified BSD License text as described in Section 4.e of
-
-
-
-
-Dahm, et al.             Expires January 2, 2016                [Page 1]
-
-Internet-Draft            The TACACS+ Protocol                 July 2015
-
-
    the Trust Legal Provisions and are provided without warranty as
    described in the Simplified BSD License.
 
+   This document may contain material from IETF Documents or IETF
+   Contributions published or made publicly available before November
+   10, 2008.  The person(s) controlling the copyright in some of this
+   material may not have granted the IETF Trust the right to allow
+   modifications of such material outside the IETF Standards Process.
+   Without obtaining an adequate license from the person(s) controlling
+   the copyright in such materials, this document may not be modified
+   outside the IETF Standards Process, and derivative works of it may
+   not be created outside the IETF Standards Process, except to format
+   it for publication as an RFC or to translate it into languages other
+   than English.
+
+Table of Contents
+
+   1.  Introduction  . . . . . . . . . . . . . . . . . . . . . . . .   3
+   2.  Technical Definitions . . . . . . . . . . . . . . . . . . . .   4
+   3.  TACACS+ Connections and Sessions  . . . . . . . . . . . . . .   6
+     3.1.  Connection  . . . . . . . . . . . . . . . . . . . . . . .   6
+     3.2.  Session . . . . . . . . . . . . . . . . . . . . . . . . .   6
+     3.3.  Single Connect Mode . . . . . . . . . . . . . . . . . . .   6
+     3.4.  The TACACS+ Packet Header . . . . . . . . . . . . . . . .   7
+     3.5.  The TACACS+ Packet Body . . . . . . . . . . . . . . . . .   9
+     3.6.  Encryption  . . . . . . . . . . . . . . . . . . . . . . .   9
+       3.6.1.  Legacy Body Encryption  . . . . . . . . . . . . . . .   9
+       3.6.2.  Start TLS Transport Encryption  . . . . . . . . . . .  11
+       3.6.3.  TLS Handshake . . . . . . . . . . . . . . . . . . . .  11
+       3.6.4.  TLS Cypher Requirements . . . . . . . . . . . . . . .  12
+   4.  Authentication  . . . . . . . . . . . . . . . . . . . . . . .  13
+     4.1.  The Authentication START Packet Body  . . . . . . . . . .  13
+     4.2.  The Authentication REPLY Packet Body  . . . . . . . . . .  15
+     4.3.  The Authentication CONTINUE Packet Body . . . . . . . . .  16
+     4.4.  Description of Authentication Process . . . . . . . . . .  17
+       4.4.1.  Version Behaviour . . . . . . . . . . . . . . . . . .  18
+       4.4.2.  Common Authentication Flows . . . . . . . . . . . . .  19
+       4.4.3.  Aborting an Authentication Session  . . . . . . . . .  23
+   5.  Authorization . . . . . . . . . . . . . . . . . . . . . . . .  24
+     5.1.  The Authorization REQUEST Packet Body . . . . . . . . . .  25
+     5.2.  The Authorization RESPONSE Packet Body  . . . . . . . . .  27
+   6.  Accounting  . . . . . . . . . . . . . . . . . . . . . . . . .  29
+     6.1.  The Account REQUEST Packet Body . . . . . . . . . . . . .  29
+     6.2.  The Accounting REPLY Packet Body  . . . . . . . . . . . .  30
+   7.  Attribute-Value Pairs . . . . . . . . . . . . . . . . . . . .  31
+
+
+
+Dahm, et al.            Expires December 14, 2015               [Page 2]
+
+Internet-Draft            The TACACS+ Protocol                 June 2015
+
+
+     7.1.  Authorization Attributes  . . . . . . . . . . . . . . . .  32
+     7.2.  Accounting Attributes . . . . . . . . . . . . . . . . . .  34
+   8.  Privilege Levels  . . . . . . . . . . . . . . . . . . . . . .  36
+   9.  References  . . . . . . . . . . . . . . . . . . . . . . . . .  36
+   Authors' Addresses  . . . . . . . . . . . . . . . . . . . . . . .  37
+
 1.  Introduction
 
-   This document is largely based upon the original draft specification
-   of TACACS+ authored by Lol Grant And Dave Carrel ``The Draft''
-   [TheDraft].  This document specifies an Internet standards track
-   protocol for the Internet community, and requests discussion and
-   suggestions for improvements.  Distribution of this memo is
-   unlimited.
+   This Internet-Draft is submitted in full conformance with the
+   provisions of BCP 78 and BCP 79.
 
-   This document is an Internet-Draft.  Internet-Drafts are working
-   documents of the Internet Engineering Task Force (IETF), its areas,
-   and its working groups.  Note that other groups may also distribute
-   working documents as Internet-Drafts.
+   Internet-Drafts are working documents of the Internet Engineering
+   Task Force (IETF).  Note that other groups may also distribute
+   working documents as Internet-Drafts.  The list of current Internet-
+   Drafts is at http://datatracker.ietf.org/drafts/current/.
 
    Internet-Drafts are draft documents valid for a maximum of six months
    and may be updated, replaced, or obsoleted by other documents at any
-   time.  It is inappropriate to use Internet Drafts as reference
-   material or to cite them other than as ``work in progress.''
+   time.  It is inappropriate to use Internet-Drafts as reference
+   material or to cite them other than as "work in progress."
 
-   To learn the current status of any Internet-Draft, please check the
-   ``1id-abstracts.txt'' listing contained in the Internet Drafts Shadow
-   Directories on ftp.is.co.za (Africa), nic.nordu.net (Europe),
-   munnari.oz.au (Pacific Rim), ds.internic.net (US East Coast), or
-   ftp.isi.edu (US West Coast).
+   This Internet-Draft will expire on December 10, 2015.
 
    A wide range of TACACS+ clients and servers are already deployed in
    the field, based upon ``The Draft''.  This specification is
@@ -104,18 +157,18 @@ Internet-Draft            The TACACS+ Protocol                 July 2015
    Accounting.  It allows for arbitrary length and content
    authentication exchanges, which will support any authentication
    mechanism to be utilized with TACACS+ clients.  It is extensible to
-
-
-
-Dahm, et al.             Expires January 2, 2016                [Page 2]
-
-Internet-Draft            The TACACS+ Protocol                 July 2015
-
-
    provide for site customization and future development features, and
    it uses TCP to ensure reliable delivery.  The protocol allows the
    TACACS+ client to request very fine-grained access control and allows
    the server to respond to each component of that request.
+
+
+
+
+Dahm, et al.            Expires December 14, 2015               [Page 3]
+
+Internet-Draft            The TACACS+ Protocol                 June 2015
+
 
    The separation of authentication, authorization and accounting is a
    fundamental component of the design of TACACS+. The distinction
@@ -160,19 +213,18 @@ Internet-Draft            The TACACS+ Protocol                 July 2015
 
    It is important to distinguish Authorization from Authentication.
    Authorization is the action of determining what a user is allowed to
-
-
-
-Dahm, et al.             Expires January 2, 2016                [Page 3]
-
-Internet-Draft            The TACACS+ Protocol                 July 2015
-
-
    do.  Generally authentication precedes authorization, but again, this
    is not required.  An authorization request may indicate that the user
    is not authenticated (we don't know who they are).  In this case it
    is up to the authorization agent to determine if an unauthenticated
    user is allowed the services in question.
+
+
+
+Dahm, et al.            Expires December 14, 2015               [Page 4]
+
+Internet-Draft            The TACACS+ Protocol                 June 2015
+
 
    In TACACS+, authorization does not merely provide yes or no answers,
    but it may also customize the service for the particular user.
@@ -216,18 +268,19 @@ Internet-Draft            The TACACS+ Protocol                 July 2015
    to its business model, in accordance with the flows defined in this
    document.
 
-
-
-
-Dahm, et al.             Expires January 2, 2016                [Page 4]
-
-Internet-Draft            The TACACS+ Protocol                 July 2015
-
-
    Packet
 
    All uses of the word packet in this document refer to TACACS+
    protocol packets unless explicitly noted otherwise.
+
+
+
+
+
+Dahm, et al.            Expires December 14, 2015               [Page 5]
+
+Internet-Draft            The TACACS+ Protocol                 June 2015
+
 
 3.  TACACS+ Connections and Sessions
 
@@ -272,18 +325,19 @@ Internet-Draft            The TACACS+ Protocol                 July 2015
    may set this flag even if the client does not set it, but the client
    is under no obligation to honor it.
 
-
-
-
-Dahm, et al.             Expires January 2, 2016                [Page 5]
-
-Internet-Draft            The TACACS+ Protocol                 July 2015
-
-
    The flag is only relevant for the first two packets on a connection,
    to allow the client and server to establish single connection mode.
    The flag MUST be ignored after these two packets since the single-
    connect status of a connection, once established, must not be
+
+
+
+
+Dahm, et al.            Expires December 14, 2015               [Page 6]
+
+Internet-Draft            The TACACS+ Protocol                 June 2015
+
+
    changed.  The connection must instead be closed and a new connection
    opened, if required.
 
@@ -329,16 +383,16 @@ Internet-Draft            The TACACS+ Protocol                 July 2015
 
    This is the packet type.  Legal values are:
 
-
-
-Dahm, et al.             Expires January 2, 2016                [Page 6]
-
-Internet-Draft            The TACACS+ Protocol                 July 2015
-
-
       TAC_PLUS_START_TLS := 0x00 (Upgrade Connection to TLS)
 
       TAC_PLUS_AUTHEN := 0x01 (Authentication)
+
+
+
+Dahm, et al.            Expires December 14, 2015               [Page 7]
+
+Internet-Draft            The TACACS+ Protocol                 June 2015
+
 
       TAC_PLUS_AUTHOR := 0x02 (Authorization)
 
@@ -385,14 +439,16 @@ Internet-Draft            The TACACS+ Protocol                 July 2015
    number, it will compromise the protocol's security.  RFC 1750
    [RFC1750] )
 
-
-
-Dahm, et al.             Expires January 2, 2016                [Page 7]
-
-Internet-Draft            The TACACS+ Protocol                 July 2015
-
-
    length
+
+
+
+
+
+Dahm, et al.            Expires December 14, 2015               [Page 8]
+
+Internet-Draft            The TACACS+ Protocol                 June 2015
+
 
    The total length of the packet body (not including the header).  This
    value is in network byte order.  Packets are never padded beyond this
@@ -439,17 +495,16 @@ Internet-Draft            The TACACS+ Protocol                 July 2015
 
    ENCRYPTED {data} == data ^ pseudo_pad
 
-
-
-
-
-Dahm, et al.             Expires January 2, 2016                [Page 8]
-
-Internet-Draft            The TACACS+ Protocol                 July 2015
-
-
    The pad is generated by concatenating a series of MD5 hashes (each 16
    bytes long) and truncating it to the length of the input data.
+
+
+
+
+Dahm, et al.            Expires December 14, 2015               [Page 9]
+
+Internet-Draft            The TACACS+ Protocol                 June 2015
+
 
    Whenever used in this document, MD5 refers to the "RSA Data Security,
    Inc. MD5 Message-Digest Algorithm" as specified in RFC 1321 [RFC1321]
@@ -496,16 +551,17 @@ Internet-Draft            The TACACS+ Protocol                 July 2015
    may be expected to be seen when there are mismatched keys between the
    client and the TACACS+ server.
 
-
-
-
-Dahm, et al.             Expires January 2, 2016                [Page 9]
-
-Internet-Draft            The TACACS+ Protocol                 July 2015
-
-
    If an error must be declared but the type of the incoming packet
    cannot be determined, a packet with the identical cleartext header
+
+
+
+
+Dahm, et al.            Expires December 14, 2015              [Page 10]
+
+Internet-Draft            The TACACS+ Protocol                 June 2015
+
+
    but with a sequence number incremented by one and the length set to
    zero MUST be returned to indicate an error.
 
@@ -538,13 +594,6 @@ Internet-Draft            The TACACS+ Protocol                 July 2015
    Client sends complete ClientHello packet in the first packet of the
    session as a packet body.  Packet type is TAC_PLUS_START_TLS.
 
-   1 2 3 4 5 6 7 8  1 2 3 4 5 6 7 8  1 2 3 4 5 6 7 8  1 2 3 4 5 6 7 8
-   +----------------+----------------+----------------+----------------+
-   |                              length                               |
-   +----------------+----------------+----------------+----------------+
-   |    Client Hello data...
-   +----------------+----------------+----------------+----------------+
-
    If server supports STARTTLS, it SHALL respond with ServerHello.
    There is no further TACACS+ header encapsulation needed for TLS
    handshake to proceed.
@@ -552,13 +601,6 @@ Internet-Draft            The TACACS+ Protocol                 July 2015
    If server doesn't support STARTTLS, it MUST respond with the same
    header as received, but with length set to 0 and seq_no incremented
    by one.
-
-
-
-Dahm, et al.             Expires January 2, 2016               [Page 10]
-
-Internet-Draft            The TACACS+ Protocol                 July 2015
-
 
    If TLS handshake succeeds, client CAN use the tunnel as a method of
    secure transport.
@@ -568,6 +610,14 @@ Internet-Draft            The TACACS+ Protocol                 July 2015
    Server CAN be configured to only allow STARTTLS protected sessions.
    In this case, it MUST reject all client requests which are not of
    type TAC_PLUS_STARTTLS and are not received over already established
+
+
+
+Dahm, et al.            Expires December 14, 2015              [Page 11]
+
+Internet-Draft            The TACACS+ Protocol                 June 2015
+
+
    connection.  It rejects them by sending back the same header as
    received, but with length set to 0 and seq_no incremented by one.
 
@@ -609,13 +659,6 @@ Internet-Draft            The TACACS+ Protocol                 July 2015
    alert and MUST NOT respond with unknown_psk_identity.  Process to
    change preshared keys on server and client is then:
 
-
-
-Dahm, et al.             Expires January 2, 2016               [Page 11]
-
-Internet-Draft            The TACACS+ Protocol                 July 2015
-
-
    1.  Add new key with new PSK identity on the server.
 
    2.  Add new key with new PSK identity on the client.
@@ -623,6 +666,13 @@ Internet-Draft            The TACACS+ Protocol                 July 2015
    3.  Remove old key with old PSK identity from the client.
 
    4.  Remove old key with old PSK identity from the server.
+
+
+
+Dahm, et al.            Expires December 14, 2015              [Page 12]
+
+Internet-Draft            The TACACS+ Protocol                 June 2015
+
 
    Note: PSK identity is transmitted in clear text and must not contain
    information which could aid an attacker who can eavesdrop on the
@@ -664,14 +714,6 @@ Internet-Draft            The TACACS+ Protocol                 July 2015
 
    This indicates the privilege level that the user is authenticating
    as.  Privilege levels are ordered values from 0 to 15 with each level
-
-
-
-Dahm, et al.             Expires January 2, 2016               [Page 12]
-
-Internet-Draft            The TACACS+ Protocol                 July 2015
-
-
    representing a privilege level that is a superset of the next lower
    value.  Pre-defined values are:
 
@@ -680,6 +722,13 @@ Internet-Draft            The TACACS+ Protocol                 July 2015
       TAC_PLUS_PRIV_LVL_ROOT := 0x0f
 
       TAC_PLUS_PRIV_LVL_USER := 0x01
+
+
+
+Dahm, et al.            Expires December 14, 2015              [Page 13]
+
+Internet-Draft            The TACACS+ Protocol                 June 2015
+
 
       TAC_PLUS_PRIV_LVL_MIN := 0x00
 
@@ -720,14 +769,6 @@ Internet-Draft            The TACACS+ Protocol                 July 2015
 
       TAC_PLUS_AUTHEN_SVC_PT := 0x05
 
-
-
-
-Dahm, et al.             Expires January 2, 2016               [Page 13]
-
-Internet-Draft            The TACACS+ Protocol                 July 2015
-
-
       TAC_PLUS_AUTHEN_SVC_RCMD := 0x06
 
       TAC_PLUS_AUTHEN_SVC_X25 := 0x07
@@ -735,6 +776,15 @@ Internet-Draft            The TACACS+ Protocol                 July 2015
       TAC_PLUS_AUTHEN_SVC_NASI := 0x08
 
       TAC_PLUS_AUTHEN_SVC_FWPROXY := 0x09
+
+
+
+
+
+Dahm, et al.            Expires December 14, 2015              [Page 14]
+
+Internet-Draft            The TACACS+ Protocol                 June 2015
+
 
    The ENABLE service refers to a service requesting authentication in
    order to grant the user different privileges.  This is comparable to
@@ -772,18 +822,6 @@ Internet-Draft            The TACACS+ Protocol                 July 2015
    The TACACS+ server sends only one type of authentication packet (a
    REPLY packet) to the client.  The REPLY packet body looks as follows:
 
-
-
-
-
-
-
-
-Dahm, et al.             Expires January 2, 2016               [Page 14]
-
-Internet-Draft            The TACACS+ Protocol                 July 2015
-
-
    1 2 3 4 5 6 7 8  1 2 3 4 5 6 7 8  1 2 3 4 5 6 7 8  1 2 3 4 5 6 7 8
    +----------------+----------------+----------------+----------------+
    |     status     |      flags     |        server_msg len           |
@@ -796,6 +834,13 @@ Internet-Draft            The TACACS+ Protocol                 July 2015
    status
 
    The current status of the authentication.  Legal values are:
+
+
+
+Dahm, et al.            Expires December 14, 2015              [Page 15]
+
+Internet-Draft            The TACACS+ Protocol                 June 2015
+
 
       TAC_PLUS_AUTHEN_STATUS_PASS := 0x01
 
@@ -832,14 +877,6 @@ Internet-Draft            The TACACS+ Protocol                 July 2015
    and is intended for the client, not the user.  Valid uses of this
    field are described below.
 
-
-
-
-Dahm, et al.             Expires January 2, 2016               [Page 15]
-
-Internet-Draft            The TACACS+ Protocol                 July 2015
-
-
 4.3.  The Authentication CONTINUE Packet Body
 
    This packet is sent from the client to the server following the
@@ -853,6 +890,13 @@ Internet-Draft            The TACACS+ Protocol                 July 2015
    +----------------+----------------+----------------+----------------+
    |    data ...
    +----------------+
+
+
+
+Dahm, et al.            Expires December 14, 2015              [Page 16]
+
+Internet-Draft            The TACACS+ Protocol                 June 2015
+
 
    user_msg
 
@@ -888,14 +932,6 @@ Internet-Draft            The TACACS+ Protocol                 July 2015
 
    A set of standard authentication classifications is defined in this
    document.  Each authentication flow consists of a START packet.  The
-
-
-
-Dahm, et al.             Expires January 2, 2016               [Page 16]
-
-Internet-Draft            The TACACS+ Protocol                 July 2015
-
-
    server responds either with a request for more information (GETDATA,
    GETUSER or GETPASS) or a termination (PASS or FAIL).  The actions and
    meanings when the server sends a RESTART, ERROR or FOLLOW are common
@@ -910,6 +946,14 @@ Internet-Draft            The TACACS+ Protocol                 July 2015
 
    All three cause the same action to be performed, but in the case of
    TAC_PLUS_AUTHEN_STATUS_GETUSER, the client can know that the
+
+
+
+Dahm, et al.            Expires December 14, 2015              [Page 17]
+
+Internet-Draft            The TACACS+ Protocol                 June 2015
+
+
    information that the user responds with is a username, and for
    TAC_PLUS_AUTHEN_STATUS_GETPASS, that the user response represents a
    password.  TAC_PLUS_AUTHEN_STATUS_GETDATA is the generic request for
@@ -944,14 +988,6 @@ Internet-Draft            The TACACS+ Protocol                 July 2015
    SENDPASS requested a copy of the user's plaintext password so that
    the client could complete the authentication.  The CHAP hashing was
    performed on the client.  Inbound PAP performed a normal LOGIN,
-
-
-
-Dahm, et al.             Expires January 2, 2016               [Page 17]
-
-Internet-Draft            The TACACS+ Protocol                 July 2015
-
-
    sending the username in the START packet and then waiting for a
    GETPASS and sending the password in a CONTINUE packet.
 
@@ -966,6 +1002,14 @@ Internet-Draft            The TACACS+ Protocol                 July 2015
    NOTE: Only those requests which have changed from their minor_version
    0 implementation (i.e.  CHAP, MS-CHAP and PAP authentications) should
    use the new minor_version number of 1.  All other requests (i.e.  all
+
+
+
+Dahm, et al.            Expires December 14, 2015              [Page 18]
+
+Internet-Draft            The TACACS+ Protocol                 June 2015
+
+
    authorisation and accounting and ASCII authentication) MUST continue
    to use the same minor_version number of 0.  The removal of SENDPASS
    was prompted by security concerns, and is no longer considered part
@@ -999,15 +1043,6 @@ Internet-Draft            The TACACS+ Protocol                 July 2015
    The entire exchange MUST consist of a single START packet and a
    single REPLY.  The START packet MUST contain a username and the data
    field MUST contain the PAP ASCII password.  A PAP authentication only
-
-
-
-
-Dahm, et al.             Expires January 2, 2016               [Page 18]
-
-Internet-Draft            The TACACS+ Protocol                 July 2015
-
-
    consists of a username and password RFC 1334 [RFC1334] . The REPLY
    from the server MUST be either a PASS or FAIL.
 
@@ -1022,6 +1057,14 @@ Internet-Draft            The TACACS+ Protocol                 July 2015
    single REPLY.  The START packet MUST contain the username in the user
    field and the data field will be a concatenation of the PPP id, the
    challenge and the response.
+
+
+
+
+Dahm, et al.            Expires December 14, 2015              [Page 19]
+
+Internet-Draft            The TACACS+ Protocol                 June 2015
+
 
    The length of the challenge value can be determined from the length
    of the data field minus the length of the id (always 1 octet) and the
@@ -1055,15 +1098,6 @@ Internet-Draft            The TACACS+ Protocol                 July 2015
 
    Inbound MS-CHAP v2 login
 
-
-
-
-
-Dahm, et al.             Expires January 2, 2016               [Page 19]
-
-Internet-Draft            The TACACS+ Protocol                 July 2015
-
-
            action = TAC_PLUS_AUTHEN_LOGIN
            authen_type = TAC_PLUS_AUTHEN_TYPE_MSCHAP
            minor_version = 0x1
@@ -1080,6 +1114,14 @@ Internet-Draft            The TACACS+ Protocol                 July 2015
 
    To perform the authentication, the server will use a the algorithm
    specified RFC RFC2759 [RFC2759] on the user's secret and challenge
+
+
+
+Dahm, et al.            Expires December 14, 2015              [Page 20]
+
+Internet-Draft            The TACACS+ Protocol                 June 2015
+
+
    and then compare the resulting value with the response.  The REPLY
    from the server MUST be a PASS or FAIL.
 
@@ -1111,15 +1153,6 @@ Internet-Draft            The TACACS+ Protocol                 July 2015
    This is used when the client needs to provide CHAP authentication
    credentials to the remote PPP peer.  The entire exchange MUST consist
    of a single START packet and a single REPLY.  The START packet MUST
-
-
-
-
-Dahm, et al.             Expires January 2, 2016               [Page 20]
-
-Internet-Draft            The TACACS+ Protocol                 July 2015
-
-
    contain the username in the user field and the data field will be a
    concatenation of the PPP id and the challenge.
 
@@ -1133,6 +1166,17 @@ Internet-Draft            The TACACS+ Protocol                 July 2015
 
    Outbound MS-CHAP request (Backward compatibility, not for new
    designs)
+
+
+
+
+
+
+
+Dahm, et al.            Expires December 14, 2015              [Page 21]
+
+Internet-Draft            The TACACS+ Protocol                 June 2015
+
 
            action = TAC_PLUS_AUTHEN_SENDAUTH
            authen_type = TAC_PLUS_AUTHEN_TYPE_MSCHAP
@@ -1168,14 +1212,6 @@ Internet-Draft            The TACACS+ Protocol                 July 2015
    This is an ENABLE request, used to change the current running
    privilege level of a principal.  The exchange MAY consist of multiple
    messages while the server collects the information it requires in
-
-
-
-Dahm, et al.             Expires January 2, 2016               [Page 21]
-
-Internet-Draft            The TACACS+ Protocol                 July 2015
-
-
    order to allow changing the principal's privilege level.  This
    exchange is very similar to an Inbound ASCII login (which see).
 
@@ -1188,6 +1224,14 @@ Internet-Draft            The TACACS+ Protocol                 July 2015
 
    action = TAC_PLUS_AUTHEN_CHPASS
    authen_type = TAC_PLUS_AUTHEN_TYPE_ASCII
+
+
+
+
+
+Dahm, et al.            Expires December 14, 2015              [Page 22]
+
+Internet-Draft            The TACACS+ Protocol                 June 2015
 
 
    This exchange consists of multiple messages while the server collects
@@ -1224,14 +1268,6 @@ Internet-Draft            The TACACS+ Protocol                 July 2015
    alternate way of performing the authentication, other than TACACS+.
    If the protocol is not present, then TACACS+ is assumed.
 
-
-
-
-Dahm, et al.             Expires January 2, 2016               [Page 22]
-
-Internet-Draft            The TACACS+ Protocol                 July 2015
-
-
    Protocols are ASCII numbers corresponding to the methods listed in
    the authen_method field of authorization packets (defined below).
    The host is specified as either a fully qualified domain name, or an
@@ -1246,6 +1282,13 @@ Internet-Draft            The TACACS+ Protocol                 July 2015
    or none of these hosts.  If it chooses to use none, then it MUST
    treat the authentication as if the return status was
    TAC_PLUS_AUTHEN_STATUS_FAIL.
+
+
+
+Dahm, et al.            Expires December 14, 2015              [Page 23]
+
+Internet-Draft            The TACACS+ Protocol                 June 2015
+
 
    While the order of hosts in this packet indicates a preference, but
    the client is not obliged to use that ordering.
@@ -1280,14 +1323,6 @@ Internet-Draft            The TACACS+ Protocol                 July 2015
    authorization services.  An authorization session is defined as a
    single pair of messages, a REQUEST followed by a RESPONSE.
 
-
-
-
-Dahm, et al.             Expires January 2, 2016               [Page 23]
-
-Internet-Draft            The TACACS+ Protocol                 July 2015
-
-
    The authorization REQUEST message contains a fixed set of fields that
    describe the authenticity of the user or process, and a variable set
    of arguments that describe the services and options for which
@@ -1300,6 +1335,16 @@ Internet-Draft            The TACACS+ Protocol                 July 2015
    The arguments in both a REQUEST and a RESPONSE can be specified as
    either mandatory or optional.  An optional argument is one that may
    or may not be used, modified or even understood by the recipient.
+
+
+
+
+
+
+Dahm, et al.            Expires December 14, 2015              [Page 24]
+
+Internet-Draft            The TACACS+ Protocol                 June 2015
+
 
    A mandatory argument MUST be both understood and used.  This allows
    for extending the attribute list while providing secure backwards
@@ -1336,14 +1381,6 @@ Internet-Draft            The TACACS+ Protocol                 July 2015
    This indicates the authentication method used by the client to
    acquire the user information.
 
-
-
-
-Dahm, et al.             Expires January 2, 2016               [Page 24]
-
-Internet-Draft            The TACACS+ Protocol                 July 2015
-
-
       TAC_PLUS_AUTHEN_METH_NOT_SET := 0x00
 
       TAC_PLUS_AUTHEN_METH_NONE := 0x01
@@ -1357,6 +1394,13 @@ Internet-Draft            The TACACS+ Protocol                 July 2015
       TAC_PLUS_AUTHEN_METH_LOCAL := 0x05
 
       TAC_PLUS_AUTHEN_METH_TACACSPLUS := 0x06
+
+
+
+Dahm, et al.            Expires December 14, 2015              [Page 25]
+
+Internet-Draft            The TACACS+ Protocol                 June 2015
+
 
       TAC_PLUS_AUTHEN_METH_GUEST := 0x08
 
@@ -1393,13 +1437,6 @@ Internet-Draft            The TACACS+ Protocol                 July 2015
    (Section 4) above.  It indicates the service through which the user
    authenticated.
 
-
-
-Dahm, et al.             Expires January 2, 2016               [Page 25]
-
-Internet-Draft            The TACACS+ Protocol                 July 2015
-
-
    user
 
    This field contains the user's account name.
@@ -1413,6 +1450,13 @@ Internet-Draft            The TACACS+ Protocol                 July 2015
 
    This field matches the rem_addr field in the authentication section
    (Section 4) above.
+
+
+
+Dahm, et al.            Expires December 14, 2015              [Page 26]
+
+Internet-Draft            The TACACS+ Protocol                 June 2015
+
 
    arg_cnt
 
@@ -1442,20 +1486,6 @@ Internet-Draft            The TACACS+ Protocol                 July 2015
 
 5.2.  The Authorization RESPONSE Packet Body
 
-
-
-
-
-
-
-
-
-
-Dahm, et al.             Expires January 2, 2016               [Page 26]
-
-Internet-Draft            The TACACS+ Protocol                 July 2015
-
-
    1 2 3 4 5 6 7 8  1 2 3 4 5 6 7 8  1 2 3 4 5 6 7 8  1 2 3 4 5 6 7 8
    +----------------+----------------+----------------+----------------+
    |    status      |     arg_cnt    |         server_msg len          |
@@ -1476,6 +1506,13 @@ Internet-Draft            The TACACS+ Protocol                 July 2015
    +----------------+----------------+----------------+----------------+
 
    status This field indicates the authorization status
+
+
+
+Dahm, et al.            Expires December 14, 2015              [Page 27]
+
+Internet-Draft            The TACACS+ Protocol                 June 2015
+
 
       TAC_PLUS_AUTHOR_STATUS_PASS_ADD := 0x01
 
@@ -1504,14 +1541,6 @@ Internet-Draft            The TACACS+ Protocol                 July 2015
 
    arg
 
-
-
-
-Dahm, et al.             Expires January 2, 2016               [Page 27]
-
-Internet-Draft            The TACACS+ Protocol                 July 2015
-
-
    An attribute-value pair that describes the command to be performed.
    (see below)
 
@@ -1533,6 +1562,14 @@ Internet-Draft            The TACACS+ Protocol                 July 2015
    A status of TAC_PLUS_AUTHOR_STATUS_ERROR indicates an error occurred
    on the server.
 
+
+
+
+Dahm, et al.            Expires December 14, 2015              [Page 28]
+
+Internet-Draft            The TACACS+ Protocol                 June 2015
+
+
    When the status equals TAC_PLUS_AUTHOR_STATUS_FOLLOW, then the
    arg_cnt MUST be 0.  In that case, the actions to be taken and the
    contents of the data field are identical to the
@@ -1543,30 +1580,6 @@ Internet-Draft            The TACACS+ Protocol                 July 2015
 6.  Accounting
 
 6.1.  The Account REQUEST Packet Body
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-Dahm, et al.             Expires January 2, 2016               [Page 28]
-
-Internet-Draft            The TACACS+ Protocol                 July 2015
-
 
    1 2 3 4 5 6 7 8  1 2 3 4 5 6 7 8  1 2 3 4 5 6 7 8  1 2 3 4 5 6 7 8
    +----------------+----------------+----------------+----------------+
@@ -1605,6 +1618,14 @@ Internet-Draft            The TACACS+ Protocol                 July 2015
    All other fields are defined in the authorization and authentication
    sections above and have the same semantics.
 
+
+
+
+Dahm, et al.            Expires December 14, 2015              [Page 29]
+
+Internet-Draft            The TACACS+ Protocol                 June 2015
+
+
    See section 12 Accounting Attribute-value Pairs for the dictionary of
    attributes relevant to accounting.
 
@@ -1615,14 +1636,6 @@ Internet-Draft            The TACACS+ Protocol                 July 2015
    reply with success only when the record has been committed to the
    required level of security, relieving the burden on the client from
    ensuring any better form of accounting is required.
-
-
-
-
-Dahm, et al.             Expires January 2, 2016               [Page 29]
-
-Internet-Draft            The TACACS+ Protocol                 July 2015
-
 
    1 2 3 4 5 6 7 8  1 2 3 4 5 6 7 8  1 2 3 4 5 6 7 8  1 2 3 4 5 6 7 8
    +----------------+----------------+----------------+----------------+
@@ -1660,6 +1673,15 @@ Internet-Draft            The TACACS+ Protocol                 July 2015
 
    The server MUST terminate the session after sending a REPLY.
 
+
+
+
+
+Dahm, et al.            Expires December 14, 2015              [Page 30]
+
+Internet-Draft            The TACACS+ Protocol                 June 2015
+
+
    The TAC_PLUS_ACCT_FLAG_START flag indicates that this is a start
    accounting message.  Start messages should only be sent once when a
    task is started.  The TAC_PLUS_ACCT_FLAG_STOP indicates that this is
@@ -1669,16 +1691,6 @@ Internet-Draft            The TACACS+ Protocol                 July 2015
    still running.
 
    Placeholder table:
-
-
-
-
-
-
-Dahm, et al.             Expires January 2, 2016               [Page 30]
-
-Internet-Draft            The TACACS+ Protocol                 July 2015
-
 
              WD - watchdog
              SP - Stop
@@ -1719,6 +1731,13 @@ Internet-Draft            The TACACS+ Protocol                 July 2015
    It is recommended that hosts be specified as a numeric address so as
    to avoid any ambiguities.
 
+
+
+Dahm, et al.            Expires December 14, 2015              [Page 31]
+
+Internet-Draft            The TACACS+ Protocol                 June 2015
+
+
    Absolute times should be specified in seconds since the epoch,
    12:00am Jan 1 1970.  The timezone MUST be UTC unless a timezone
    attribute is specified.
@@ -1726,15 +1745,6 @@ Internet-Draft            The TACACS+ Protocol                 July 2015
    A value of NULL means an attribute with a zero length string for its
    value i.e. cmd=NULL is actually transmitted as the string of 4
    characters "cmd=".
-
-
-
-
-
-Dahm, et al.             Expires January 2, 2016               [Page 31]
-
-Internet-Draft            The TACACS+ Protocol                 July 2015
-
 
 7.1.  Authorization Attributes
 
@@ -1777,6 +1787,13 @@ Internet-Draft            The TACACS+ Protocol                 July 2015
 
    outacl
 
+
+
+Dahm, et al.            Expires December 14, 2015              [Page 32]
+
+Internet-Draft            The TACACS+ Protocol                 June 2015
+
+
    ASCII identifier for an interface output access list.
 
    zonelist
@@ -1784,13 +1801,6 @@ Internet-Draft            The TACACS+ Protocol                 July 2015
    A numeric zonelist value.  (Applicable to AppleTalk only).
 
    addr
-
-
-
-Dahm, et al.             Expires January 2, 2016               [Page 32]
-
-Internet-Draft            The TACACS+ Protocol                 July 2015
-
 
    a network address
 
@@ -1832,6 +1842,14 @@ Internet-Draft            The TACACS+ Protocol                 July 2015
 
    nohangup
 
+
+
+
+Dahm, et al.            Expires December 14, 2015              [Page 33]
+
+Internet-Draft            The TACACS+ Protocol                 June 2015
+
+
    Boolean.  Do no disconnect after an automatic command.  Used only
    when service=shell and cmd=NULL
 
@@ -1840,13 +1858,6 @@ Internet-Draft            The TACACS+ Protocol                 July 2015
    privilege level to be assigned.
 
    remote_user
-
-
-
-Dahm, et al.             Expires January 2, 2016               [Page 33]
-
-Internet-Draft            The TACACS+ Protocol                 July 2015
-
 
    remote userid (authen_method must have the value
    TAC_PLUS_AUTHEN_METH_RCMD).  In the case of rcmd authorizations, the
@@ -1887,6 +1898,14 @@ Internet-Draft            The TACACS+ Protocol                 July 2015
 
    task_id
 
+
+
+
+Dahm, et al.            Expires December 14, 2015              [Page 34]
+
+Internet-Draft            The TACACS+ Protocol                 June 2015
+
+
    Start and stop records for the same event MUST have matching task_id
    attribute values.  The client must not reuse a specific task_id in a
    start record until it has sent a stop record for that task_id.
@@ -1896,13 +1915,6 @@ Internet-Draft            The TACACS+ Protocol                 July 2015
    The time the action started ().
 
    stop_time
-
-
-
-Dahm, et al.             Expires January 2, 2016               [Page 34]
-
-Internet-Draft            The TACACS+ Protocol                 July 2015
-
 
    The time the action stopped (in seconds since the epoch.)
 
@@ -1942,6 +1954,14 @@ Internet-Draft            The TACACS+ Protocol                 July 2015
 
    The number of packets transferred by this action.
 
+
+
+
+Dahm, et al.            Expires December 14, 2015              [Page 35]
+
+Internet-Draft            The TACACS+ Protocol                 June 2015
+
+
    paks_in
 
    The number of input packets transferred by this action.
@@ -1951,14 +1971,6 @@ Internet-Draft            The TACACS+ Protocol                 July 2015
    The number of output packets transferred by this action.
 
    status
-
-
-
-
-Dahm, et al.             Expires January 2, 2016               [Page 35]
-
-Internet-Draft            The TACACS+ Protocol                 July 2015
-
 
    The numeric status value associated with the action.  This is a
    signed four (4) byte word in network byte order. 0 is defined as
@@ -1996,6 +2008,16 @@ Internet-Draft            The TACACS+ Protocol                 July 2015
               RFC 1334, DOI 10.17487/RFC1334, October 1992,
               <http://www.rfc-editor.org/info/rfc1334>.
 
+
+
+
+
+
+Dahm, et al.            Expires December 14, 2015              [Page 36]
+
+Internet-Draft            The TACACS+ Protocol                 June 2015
+
+
    [RFC1750]  Eastlake 3rd, D., Crocker, S., and J. Schiller,
               "Randomness Recommendations for Security", RFC 1750, DOI
               10.17487/RFC1750, December 1994,
@@ -2008,13 +2030,6 @@ Internet-Draft            The TACACS+ Protocol                 July 2015
    [RFC2759]  Zorn, G., "Microsoft PPP CHAP Extensions, Version 2", RFC
               2759, DOI 10.17487/RFC2759, January 2000,
               <http://www.rfc-editor.org/info/rfc2759>.
-
-
-
-Dahm, et al.             Expires January 2, 2016               [Page 36]
-
-Internet-Draft            The TACACS+ Protocol                 July 2015
-
 
    [RFC4279]  Eronen, P., Ed. and H. Tschofenig, Ed., "Pre-Shared Key
               Ciphersuites for Transport Layer Security (TLS)", RFC
@@ -2049,7 +2064,20 @@ Authors' Addresses
    US
 
    Phone: +44 0208 8244508
-   Email: dcmgash@cisco.com
+   EMail: dcmgash@cisco.com
+
+
+
+
+Dahm, et al.            Expires December 14, 2015              [Page 37]
+
+Internet-Draft            The TACACS+ Protocol                 June 2015
+
+
+   David Carrel
+
+
+   Lol Grant
 
 
 
@@ -2067,4 +2095,34 @@ Authors' Addresses
 
 
 
-Dahm, et al.             Expires January 2, 2016               [Page 37]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Dahm, et al.            Expires December 14, 2015              [Page 38]
