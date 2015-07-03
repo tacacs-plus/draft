@@ -1,0 +1,2954 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE rfc SYSTEM "rfc2629.dtd">
+<?rfc toc="yes" ?>
+<?rfc rfcedstyle="yes" ?>
+<?rfc subcompact="no" ?>
+<?rfc symrefs="yes" ?>
+<rfc category="std" docName="draft-dahm-opsawg-tacacs-01.txt" ipr="pre5378Trust200902">
+    <front>
+        <title>
+            The TACACS+ Protocol
+        </title>
+        <author initials="T." surname="Dahm" fullname="Thorsten Dahm">
+            <organization>Google Inc</organization>
+
+            <address>
+                <postal>
+                    <street>1600 Amphitheatre Parkway</street>
+                    <city>Mountain View</city>
+                    <region>CA</region>
+                    <code>94043</code>
+                    <country>US</country>
+                </postal>
+
+                <phone></phone>
+                <email>thorstendlux@google.com</email>
+                <uri></uri>
+            </address>
+        </author>
+
+        <author initials="A." surname="Ota" fullname="Andrej Ota">
+            <organization>Google Inc</organization>
+
+            <address>
+                <postal>
+                    <street>1600 Amphitheatre Parkway</street>
+                    <city>Mountain View</city>
+                    <region>CA</region>
+                    <code>94043</code>
+                    <country>US</country>
+                </postal>
+
+                <phone></phone>
+                <email>aota@google.com</email>
+                <uri></uri>
+            </address>
+        </author>
+
+        <author initials="D.C." surname="Medway Gash" fullname="Douglas C. Medway Gash">
+            <organization>Cisco Systems, Inc.</organization>
+
+            <address>
+                <postal>
+                    <street>170 West Tasman Dr.</street>
+                    <city>San Jose</city>
+                    <region>CA</region>
+                    <code>95134</code>
+                    <country>US</country>
+                </postal>
+
+                <phone>+44 0208 8244508</phone>
+                <email>dcmgash@cisco.com</email>
+                <uri></uri>
+            </address>
+        </author>
+
+        <author initials="D." surname="Carrel" fullname="David Carrel">
+        </author>
+
+        <author initials="L." surname="Grant" fullname="Lol Grant">
+        </author>
+
+        <date day="3" month="July" year="2015" />
+        <area>Operations</area>
+        <workgroup>Operations</workgroup>
+        <keyword>TACACS+</keyword>
+        <keyword>Protocol</keyword>
+        <abstract>
+            <t>TACACS+ provides access control for routers, network
+                access
+                servers and other networked computing devices via one or more
+                centralized servers. TACACS+ provides separate authentication,
+                authorization and accounting services. This document describes the
+                protocol that is used by TACACS+.</t>
+        </abstract>
+
+    </front>
+
+    <middle>
+        <section anchor="Introduction" title="Introduction">
+            <t>
+                This Internet-Draft is submitted in full conformance with the
+                provisions of BCP 78 and BCP 79.</t>
+
+            <t>Internet-Drafts are working documents of the Internet
+                Engineering
+                Task Force (IETF). Note that other groups may also distribute
+                working documents as Internet-Drafts. The list of current Internet-
+                Drafts is at http://datatracker.ietf.org/drafts/current/.</t>
+
+            <t>Internet-Drafts are draft documents valid for a maximum
+                of six
+                months
+                and may be updated, replaced, or obsoleted by other documents
+                at any
+                time. It is inappropriate to use Internet-Drafts as reference
+                material or to cite them other than as "work in progress."</t>
+
+            <t>This Internet-Draft will expire on December 10, 2015.</t>
+
+
+            <t>
+                A wide range of TACACS+ clients and servers are already deployed
+                in the field, based upon ``The Draft''. This specification is
+                essentially
+                a refactoring of the draft with some minor additions. The
+                definitions
+                in the draft should map onto
+                this document, such that
+                any
+                implementations based on the draft will
+                be compliant with this
+                document. Chief changes between the documents:
+            </t>
+
+            <t>- This document introduces a TLS encryption scheme</t>
+            <t>- This document supports MS-CHAPv2</t>
+            <t>- This document officially removes SENDPASS for security
+                reasons.
+                This option was still documented as 'deprecated' in ''The Draft''</t>
+            <t>- This document deprecates description of legacy features
+                such as
+                ARAP and outbound authentication. The required enumerations are
+                kept, but related normative description is removed.</t>
+
+            <t>The TACACS+ protocol is the latest generation of TACACS.
+                It
+                separates the functions of Authentication, Authorization and
+                Accounting. It allows for arbitrary length and content
+                authentication exchanges, which will support any authentication
+                mechanism to be utilized with TACACS+ clients. It is extensible to
+                provide for site customization and future development features, and
+                it uses TCP to ensure reliable delivery. The protocol allows the
+                TACACS+ client to request very fine-grained access
+                control and
+                allows the server to respond to each component of that request.</t>
+
+            <t>The separation of authentication, authorization and
+                accounting is
+                a fundamental component of the design of TACACS+. The distinction
+                between them is very important so this document will
+                address each
+                one separately. It is important to note that TACACS+ provides for
+                all three, but an implementation or configuration is not required to
+                employ all three. Each one serves a unique purpose that
+                alone is
+                useful, and together can be quite powerful. A very important
+                benefit
+                to separating authentication from authorization is that
+                authorization (and per-user profiles) can be a dynamic process.
+                Instead of a one- shot user profile, TACACS+ can be integrated with
+                other negotiations, such as a PPP negotiation, for far greater
+                flexibility. The accounting portion can serve to provide
+                security
+                auditing or accounting/ billing services.</t>
+
+        </section>
+        <section anchor="TechnicalDefinitions" title="Technical Definitions">
+            <t>This section provides a few basic definitions that are
+                applicable
+                to this document</t>
+            <t>Authentication</t>
+            <t>Authentication is the action of determining who a user
+                (or entity)
+                is. Authentication can take many forms. Traditional authentication
+                utilizes a name and a fixed password. Most computers
+                work this way,
+                and TACACS+ can also work this way. However, fixed passwords have
+                limitations, mainly in the area of security. Many modern
+                authentication mechanisms utilize "one-time" passwords
+                or a
+                challenge-response query. TACACS+ is designed to support all of
+                these, and should be powerful enough to handle any future
+                mechanisms. Authentication generally takes place when the user first
+                logs in to a machine or requests a service of it.</t>
+            <t>Authentication is not mandatory; it is a site-configured
+                option.
+                Some sites do not require it. Others require it only for certain
+                services (see authorization below). Authentication may
+                also take
+                place when a user attempts to gain extra privileges, and must
+                identify himself or herself as someone who possesses the required
+                information (passwords, etc.) for those privileges.</t>
+            <t>Authorization</t>
+            <t>It is important to distinguish Authorization from
+                Authentication.
+                Authorization is the action of determining what a user is allowed to
+                do. Generally authentication precedes authorization, but again, this
+                is not required. An authorization request may indicate that the user
+                is not authenticated (we don't know who they are). In
+                this case it
+                is up to the authorization agent to determine if an unauthenticated
+                user is allowed the services in question.</t>
+            <t>
+                In TACACS+, authorization does not merely provide yes or
+                no answers,
+                but it may also customize the service for the particular user.
+                Examples of when authorization would be performed are: When a user
+                first logs in and wants to start a shell, or when a user starts PPP
+                and wants to use IP over PPP with a particular IP address. The
+                TACACS+ server might respond to these requests by allowing the
+                service, but placing a time restriction on the login shell, or by
+                requiring IP access lists on the PPP connection. For a list of
+                authorization attributes, see the
+                <xref target="Authorization">authorization section</xref>
+                .
+            </t>
+            <t>Accounting</t>
+            <t>
+                Accounting is typically the third action after
+                authentication and
+                authorization. But again, neither authentication nor authorization
+                is required. Accounting is the action of recording what a user is
+                doing, and/or has done. Accounting in TACACS+ can serve
+                two
+                purposes: It may be used as an auditing tool for security services.
+                It may also be used to account for services used, such as in a
+                billing environment. To this end, TACACS+ supports three types of
+                accounting records. Start records indicate that a
+                service is about
+                to begin. Stop records indicate that a service has just terminated,
+                and Update records are intermediate notices that
+                indicate that a
+                service is still being performed. TACACS+ accounting records contain
+                all the information used in the authorization records, and also
+                contain accounting specific information such as start and stop times
+                (when appropriate) and resource usage information. A list of
+                accounting attributes is defined in the
+                <xref target="Accounting">accounting section</xref>
+                .
+            </t>
+            <t>Client</t>
+            <t>The client is any device, (often a Network Access Server)
+                that
+                provides access services. The clients usually provide a character
+                mode front end and then allow the user to telnet or rlogin to
+                another host. A client may also support protocol based access
+                services.</t>
+            <t>Server</t>
+            <t>The server receives TACACS+ protocol requests, and
+                replies
+                according to its business model, in accordance with the flows
+                defined in this document.</t>
+            <t>Packet</t>
+            <t>All uses of the word packet in this document refer to
+                TACACS+
+                protocol packets unless explicitly noted otherwise.</t>
+        </section>
+        <section anchor="TACACSConnectionsandSessions" title="TACACS+ Connections and Sessions">
+            <section anchor="Connection" title="Connection">
+                <t>
+                    TACACS+ uses TCP for its transport. The server should listen at
+                    port 49,
+                    which is the "LOGIN" port assigned for the TACACS protocol.
+                    This
+                    port is reserved in the assigned numbers RFC for both UDP and
+                    TCP.
+                    Current TACACS and extended TACACS implementations use port 49.
+                </t>
+                <t>
+                    The encryption described inside the protocol below is kept to
+                    provide backwards compatibility, however it does not provide
+                    sufficiently robust security. For this reason, the connection can
+                    be
+                    upgraded to a secured tunnel using START TLS.
+                </t>
+            </section>
+            <section anchor="Session" title="Session">
+                <t>
+                    The concept of a session is used throughout this document. A
+                    TACACS+
+                    session is a single authentication sequence, a single
+                    authorization
+                    exchange, or a single accounting exchange.
+                </t>
+                <t>
+                    An accounting and authorization session will consist of a single
+                    pair of packets (the request and its reply). An authentication
+                    session may involve an arbitrary number of packets being exchanged.
+                    The session is an operational concept that is maintained between
+                    the
+                    TACACS+ client and server. It does not necessarily correspond to
+                    a
+                    given user or user action.
+                </t>
+            </section>
+            <section anchor="SingleConnectMode" title="Single Connect Mode">
+                <t>
+                    The packet header (see below) contains a flag to allow sessions
+                    to
+                    be
+                    multiplexed on a connection.
+                </t>
+                <t>
+                    If a client sets this flag, this indicates that it supports
+                    multiplexing TACACS+ sessions over a single TCP
+                    connection. The
+                    client MUST NOT send a second packet on a connection until
+                    single-connect status has been established.
+                </t>
+                <t>
+                    If the server sets this flag in the first reply packet in
+                    response
+                    to the first packet from a client, this indicates its
+                    willingness to
+                    support single-connection over the current
+                    connection. The server
+                    may set this flag even if the client does not
+                    set it, but the
+                    client
+                    is under no obligation to honor it.
+                </t>
+                <t>
+                    The flag is only relevant for the first two packets on a
+                    connection, to allow the client and server to establish single
+                    connection mode. The flag MUST be ignored after these two packets
+                    since the single-connect status of a connection, once established,
+                    must not be changed. The connection must instead be closed and a
+                    new
+                    connection opened, if required.
+                </t>
+                <t>
+                    When single-connect status is established, multiple sessions MUST
+                    be allowed simultaneously and/or consecutively on a single TCP
+                    connection. If single-connect status has not been
+                    established in
+                    the
+                    first two packets of a TCP connection, then the connection must
+                    be
+                    closed at the end of the first session.
+                </t>
+            </section>
+            <section anchor="TheTACACSPacketHeader" title="The TACACS+ Packet Header">
+                <t>
+                    All TACACS+ packets always begin with the following 12 byte
+                    header. The
+                    header is always cleartext and describes the remainder
+                    of
+                    the
+                    packet:
+                </t>
+                <figure>
+                    <artwork><![CDATA[
+ 1 2 3 4 5 6 7 8  1 2 3 4 5 6 7 8  1 2 3 4 5 6 7 8  1 2 3 4 5 6 7 8
++----------------+----------------+----------------+----------------+
+|major  | minor  |                |                |                |
+|version| version|      type      |     seq_no     |   flags        |
++----------------+----------------+----------------+----------------+
+|                                                                   |
+|                            session_id                             |
++----------------+----------------+----------------+----------------+
+|                                                                   |
+|                              length                               |
++----------------+----------------+----------------+----------------+
+					]]></artwork>
+                </figure>
+
+                <t>
+                    major_version
+                </t>
+                <t>
+                    This is the major TACACS+ version number.
+                </t>
+                <t>
+                    <list>
+                        <t>
+                            TAC_PLUS_MAJOR_VER := 0xc
+                        </t>
+                    </list>
+                </t>
+                <t>
+                    minor_version
+                </t>
+                <t>
+                    The minor TACACS+ version number.
+                </t>
+                <t>
+                    <list>
+                        <t>
+                            TAC_PLUS_MINOR_VER_DEFAULT := 0x0
+                        </t>
+                        <t>
+                            TAC_PLUS_MINOR_VER_ONE := 0x1
+                        </t>
+                    </list>
+                </t>
+                <t>
+                    type
+                </t>
+                <t>
+                    This is the packet type. Legal values are:
+                </t>
+                <t>
+                    <list>
+                        <t>
+                            TAC_PLUS_START_TLS := 0x00 (Upgrade Connection to TLS)
+                        </t>
+                        <t>
+                            TAC_PLUS_AUTHEN := 0x01 (Authentication)
+                        </t>
+                        <t>
+                            TAC_PLUS_AUTHOR := 0x02 (Authorization)
+                        </t>
+                        <t>
+                            TAC_PLUS_ACCT := 0x03 (Accounting)
+                        </t>
+                    </list>
+                </t>
+                <t>
+
+                    seq_no
+                </t>
+                <t>
+                    This is the sequence number of the current packet for the current
+                    session. The first packet in a session MUST have the
+                    sequence
+                    number
+                    1 and each subsequent packet will increment the sequence
+                    number by
+                    one. Thus clients only send packets containing odd
+                    sequence
+                    numbers,
+                    and TACACS+ servers only send packets containing
+                    even sequence
+                    numbers.
+                </t>
+                <t>
+                    The sequence number must never wrap i.e. if the sequence number
+                    2^8-1
+                    is
+                    ever reached, that session must terminate and be restarted
+                    with a
+                    sequence number of 1.
+                </t>
+                <t>
+                    flags
+                </t>
+                <t>
+                    This field contains various bitmapped flags.
+                </t>
+                <t>
+                    The unencrypted flag bit says whether encryption is being used on
+                    the
+                    body of the packet (the entire portion after the header).
+                </t>
+                <t>
+                    TAC_PLUS_UNENCRYPTED_FLAG := 0x01
+                </t>
+                <t>
+                    If this flag is set, the packet is not encrypted. If this flag is
+                    cleared, the packet is encrypted. Unencrypted
+                    packets are intended
+                    for testing, and are not recommended for normal use.
+                </t>
+                <t>
+                    The single-connection flag:
+                </t>
+                <t>
+                    TAC_PLUS_SINGLE_CONNECT_FLAG := 0x04
+                </t>
+                <t>
+                    This flag is used to allow a client and server to agree whether
+                    multiple
+                    sessions may be multiplexed onto a single connection.
+                </t>
+                <t>
+                    session_id
+                </t>
+                <t>
+                    The Id for this TACACS+ session. The session id
+                    should be randomly
+                    chosen. This field does not change for the duration of the TACACS+
+                    session. (If this value is not a cryptographically
+                    strong random
+                    number, it will compromise the protocol's security.
+                    <xref target="RFC1750">RFC 1750</xref>
+                    )
+                </t>
+                <t>
+                    length
+                </t>
+                <t>
+                    The total length of the packet body (not including the header).
+                    This
+                    value is in network byte order. Packets are never padded beyond
+                    this
+                    length.
+                </t>
+            </section>
+            <section anchor="TheTACACSPacketBody" title="The TACACS+ Packet Body">
+                <t>
+                    The TACACS+ body types are defined in the packet header. The
+                    remainder
+                    of this document will address the contents of the
+                    different
+                    TACACS+
+                    bodies. The following general rules apply to all
+                    TACACS+ body
+                    types:
+                </t>
+                <t>
+                    - Any variable length data fields which are unused MUST have a
+                    length
+                    value equal to zero.
+                    - Unused fixed length fields SHOULD have
+                    values of zero.
+                    - All data and message fields in a packet MUST NOT
+                    be
+                    null
+                    terminated.
+                    - All length values are unsigned and in network
+                    byte
+                    order.
+                    - There should be no padding in any of the fields or at
+                    the
+                    end of a
+                    packet.
+                </t>
+            </section>
+            <section anchor="Encryption" title="Encryption">
+                <section anchor="LegacyBodyEncryption" title="Legacy Body Encryption">
+                    <t>
+                        The body of packets may be encrypted. The following sections
+                        describe
+                        the legacy encryption mechanism that is supported to
+                        enable
+                        backwards compatibility with "The Draft".
+                    </t>
+                    <t>
+                        When the encryption mechanism relies on a secret key, it is
+                        referring to a shared secret value that is known to both the
+                        client
+                        and the server. This document does not discuss the
+                        management and
+                        storage of those keys. It is an implementation
+                        detail of the
+                        server
+                        and client, as to whether they will maintain
+                        only one key, or a
+                        different key for each client or server with
+                        which they
+                        communicate. For security reasons, the latter options
+                        should be
+                        available, but it is a site dependent decision as to
+                        whether the
+                        use of separate keys is appropriate.
+                    </t>
+                    <t>
+                        The encrypted flag field may be set as follows:
+                    </t>
+                    <t>
+                        TAC_PLUS_UNENCRYPTED_FLAG == 0x0
+                    </t>
+                    <t>
+                        In this case, the packet body is encrypted by XOR-ing it
+                        byte-wise with a pseudo random pad.
+                    </t>
+                    <t>
+                        ENCRYPTED {data} == data ^ pseudo_pad
+                    </t>
+                    <t>
+                        The pad is generated by concatenating a series of MD5 hashes
+                        (each 16 bytes long) and truncating it to the length of the input
+                        data.
+                    </t>
+                    <t>
+                        Whenever used in this document, MD5 refers to
+                        the "RSA Data
+                        Security, Inc. MD5 Message-Digest Algorithm" as specified in
+                        <xref target="RFC1321">RFC 1321</xref>
+                        .
+                    </t>
+                    <t>
+                        pseudo_pad = {MD5_1 [,MD5_2 [ ... ,MD5_n]]} truncated to
+                        len(data)
+                    </t>
+                    <t>
+                        The first MD5 hash is generated by concatenating the session_id,
+                        the secret key, the version number and the sequence number and
+                        then
+                        running MD5 over that stream. All of those input values are
+                        available in the packet header, except for the secret key which is
+                        a shared secret between the TACACS+ client and server.
+                    </t>
+                    <t>
+                        The version number is the one byte combination of the major and
+                        minor version numbers.
+                    </t>
+                    <t>
+                        The session id is used in the byte order in which it appears in
+                        the TACACS+ header. (i.e. in network byte order, not host byte
+                        order).
+                    </t>
+                    <t>
+                        Subsequent hashes are generated by using the same input stream,
+                        but concatenating the previous hash value at the end of the input
+                        stream.
+                    </t>
+                    <t>
+                        MD5_1 = MD5{session_id, key, version, seq_no}
+                        MD5_2 =
+                        MD5{session_id, key, version, seq_no, MD5_1}
+                        ....
+                        MD5_n =
+                        MD5{session_id, key, version, seq_no, MD5_n-1}
+                    </t>
+                    <t>
+
+                        TAC_PLUS_UNENCRYPTED_FLAG == 0x1
+                    </t>
+                    <t>
+                        In this case, the entire packet body is in cleartext. Encryption
+                        and decryption are null operations. This method should only be
+                        used
+                        for debugging. It does not provide data protection or
+                        authentication and is highly susceptible to packet spoofing.
+                        Implementing this encryption method is optional.
+                    </t>
+                    <t>
+                        NOTE: implementations should take care not to skip decryption
+                        simply because an incoming packet indicates that it is not
+                        encrypted. If the unencrypted flag is not set, and the packet is
+                        not encrypted, it must be dropped.
+                    </t>
+                    <t>
+                        After a packet body is decrypted, the lengths of the component
+                        values in the packet should be summed and checked against the
+                        cleartext datalength value from the header. Any packets which fail
+                        this check should be discarded and an error signalled. Commonly
+                        such failures may be expected to be seen when there are mismatched
+                        keys between the client and the TACACS+ server.
+                    </t>
+                    <t>
+                        If an error must be declared but the type of the incoming packet
+                        cannot be determined, a packet with the
+                        identical cleartext header
+                        but with a sequence number incremented by one and the length set
+                        to
+                        zero MUST be returned to indicate an error.
+                    </t>
+                </section>
+                <section anchor="StartTLSTransportEncryption"
+                    title="Start TLS Transport Encryption">
+                    <t>
+                        TACACS+ supports a mechanism to upgrade the plaintext connection
+                        to TLS.
+                        This is performed using the packet type TAC_PLUS_START_TLS.
+                        Packet Type 0x00
+                    </t>
+                    <t>
+                        Flag field MUST have TAC_PLUS_SINGLE_CONNECT_FLAG set for packet
+                        type
+                        0x00 for client request and server response.
+                    </t>
+                    <t>
+                        Flag field MUST have TAC_PLUS_UNENCRYPTED_FLAG set for packet
+                        type
+                        0x00 for client request and server response.
+                    </t>
+                    <t>
+                        Only client CAN send packet type 0x00 and it MUST send it as a
+                        first
+                        packet in session.
+                    </t>
+                    <t>
+                        After negotiating TLS session, client MUST NOT send any more
+                        packets of
+                        type 0x00 while TLS session is established. If client
+                        needs to
+                        renegotiate secure transport, it MUST close the current
+                        connection
+                        and open a new connection.
+                    </t>
+
+                    <t>
+                        After negotiating TLS session client SHOULD set
+                        TAC_PLUS_UNENCRYPTED_FLAG as there would be no
+                        benefit for
+                        additional encryption of body content.
+                    </t>
+                </section>
+                <section anchor="TLSHandshake" title="TLS Handshake">
+
+                    <t>
+                        Client sends complete ClientHello packet in the first packet of
+                        the
+                        session as a packet body. Packet type is TAC_PLUS_START_TLS.
+                    </t>
+                    <t>
+                        If server supports STARTTLS, it SHALL respond with ServerHello.
+                        There is no further TACACS+ header encapsulation
+                        needed for TLS
+                        handshake to proceed.
+                    </t>
+                    <t>
+                        If server does not support STARTTLS, it MUST respond with the
+                        same
+                        header as received, but with length set to 0 and seq_no
+                        incremented by one.
+                    </t>
+                    <t>
+                        If TLS handshake succeeds, client CAN use the tunnel as a
+                        method
+                        of
+                        secure transport.
+                    </t>
+                    <t>
+                        If TLS handshake fails, client MUST close the connection.
+                    </t>
+                    <t>
+                        Server CAN be configured to only allow STARTTLS protected
+                        sessions. In this case, it MUST reject all client requests which
+                        are not of type TAC_PLUS_STARTTLS and are not received over
+                        already established connection. It rejects them by sending back
+                        the same header as received, but with length set to 0 and seq_no
+                        incremented by one.
+                    </t>
+                </section>
+                <section anchor="TLSCypherRequirements" title="TLS Cypher Requirements">
+                    <t>
+                        TLS Protocol Version
+                    </t>
+                    <t>
+                        TACACS+ STARTTLS MUST implement at least TLS version 1.2.
+                        TACACS+ STARTTLS MAY implement higher TLS versions.
+                    </t>
+                    <t>
+                        Mandatory Cipher Suites
+                    </t>
+                    <t>
+                        TLS 1.2
+                        <xref target="RFC5246">RFC 5246</xref>
+                        allows specifying application profiles
+                        prescribing
+                        which cipher
+                        suites to implement for interoperability
+                        purposes. To maintain
+                        simplicity of current TACACS+
+                        configuration using preshared
+                        secrets, the server implementation MUST implement:
+                    </t>
+                    <t>
+                        <list>
+                            <t>
+                                TLS_DHE_PSK_WITH_3DES_EDE_CBC_SHA
+                            </t>
+                            <t>
+                                TLS_DHE_PSK_WITH_AES_128_CBC_SHA
+                            </t>
+                            <t>
+                                TLS_DHE_PSK_WITH_AES_256_CBC_SHA
+                            </t>
+                        </list>
+                    </t>
+                    <t>
+                        Client MUST implement at least one of cipher suites which are
+                        implemented on the server, and it MAY implement
+                        all of them.
+                    </t>
+                    <t>
+                        Both clients and servers MAY implement other cipher suites, but
+                        their interoperability is not guaranteed and their
+                        implementation
+                        is outside of scope of this document.
+                    </t>
+                    <t>
+                        PSK Identity Requirements.
+                    </t>
+                    <t>
+                        Because determining a correct PSK value
+                        on the server side is a
+                        computationally intensive operation
+                        requiring multiple round trips,
+                        a mechanism for hitless key
+                        change must be defined. During TLS
+                        handshake, a client MUST use
+                        PSK identity as defined in
+                        <xref target="RFC4279">RFC 4279</xref>
+                        to signal to server which
+                        PSK value to use. If server does not
+                        recognize PSK identity it
+                        MUST respond with decrypt_error alert
+                        and
+                        MUST NOT respond with
+                        unknown_psk_identity.
+                        Process to change
+                        preshared keys on server and client is then:
+                    </t>
+                    <t>
+                        <list style="numbers">
+                            <t>
+
+                                Add new key with new PSK identity on the server.
+                            </t>
+                            <t>
+                                Add new key with new PSK identity on the client.
+                            </t>
+                            <t>
+                                Remove old key with old PSK identity from the client.
+                            </t>
+                            <t>
+                                Remove old key with old PSK identity from the server.
+                            </t>
+                        </list>
+                    </t>
+
+                    <t>
+                        Note: PSK identity is transmitted in clear text and must not
+                        contain information which could aid an attacker who can eavesdrop
+                        on the connection.
+                    </t>
+                </section>
+                <section title="Security Considerations">
+                    <t>Transport encryption SHOULD be used in
+                        deployments when both the
+                        clients and servers support it. Servers that support Transport
+                        encryption MAY be configured to allow Legacy Body Encryption when
+                        Transport encryption is not supported by the client.</t>
+
+                    <t>It is NOT recommended to deploy TACACS+ without
+                        Transport or
+                        Legacy Body encryption, other than for test environments.</t>
+                </section>
+            </section>
+        </section>
+        <section anchor="Authentication" title="Authentication">
+            <section anchor="TheAuthenticationSTARTPacketBody"
+                title="The Authentication START Packet Body">
+                <figure>
+                    <artwork><![CDATA[
+ 1 2 3 4 5 6 7 8  1 2 3 4 5 6 7 8  1 2 3 4 5 6 7 8  1 2 3 4 5 6 7 8
++----------------+----------------+----------------+----------------+
+|    action      |    priv_lvl    |  authen_type   |     service    |
++----------------+----------------+----------------+----------------+
+|    user len    |    port len    |  rem_addr len  |    data len    |
++----------------+----------------+----------------+----------------+
+|    user ...
++----------------+----------------+----------------+----------------+
+|    port ...
++----------------+----------------+----------------+----------------+
+|    rem_addr ...
++----------------+----------------+----------------+----------------+
+|    data...
++----------------+----------------+----------------+----------------+
+									]]></artwork>
+                </figure>
+
+                <t>
+                    Packet fields are as follows:
+                </t>
+                <t>
+                    action
+                </t>
+                <t>
+                    This describes the authentication action to be performed. Legal
+                    values
+                    are:
+                </t>
+                <t>
+                    <list>
+                        <t>
+                            TAC_PLUS_AUTHEN_LOGIN := 0x01
+                        </t>
+                        <t>
+                            TAC_PLUS_AUTHEN_CHPASS := 0x02
+                        </t>
+                        <t>
+                            TAC_PLUS_AUTHEN_SENDAUTH := 0x04
+                        </t>
+                    </list>
+                </t>
+                <t>
+                    priv_lvl
+                </t>
+                <t>
+                    This indicates the privilege level that the user is
+                    authenticating
+                    as. Please refer to the
+                    <xref target="PrivilegeLevel">Privilege Level section</xref>
+                    below.
+                </t>
+                <t>
+                    authen_type
+                </t>
+                <t>
+                    The type of authentication that is being performed. Legal values
+                    are:
+                </t>
+                <t>
+                    <list>
+                        <t>
+                            TAC_PLUS_AUTHEN_TYPE_ASCII := 0x01
+                        </t>
+                        <t>
+                            TAC_PLUS_AUTHEN_TYPE_PAP := 0x02
+                        </t>
+                        <t>
+                            TAC_PLUS_AUTHEN_TYPE_CHAP := 0x03
+                        </t>
+                        <t>
+                            TAC_PLUS_AUTHEN_TYPE_ARAP := 0x04 (deprecated)
+                        </t>
+                        <t>
+                            TAC_PLUS_AUTHEN_TYPE_MSCHAP := 0x05
+                        </t>
+                        <t>
+                            TAC_PLUS_AUTHEN_TYPE_MSCHAPV2 := 0x06
+                        </t>
+                    </list>
+                </t>
+                <t>
+                    service
+                </t>
+                <t>
+                    This is the service that is requesting the authentication. Legal
+                    values
+                    are:
+                </t>
+                <t>
+                    <list>
+                        <t>
+                            TAC_PLUS_AUTHEN_SVC_NONE := 0x00
+                        </t>
+                        <t>
+                            TAC_PLUS_AUTHEN_SVC_LOGIN := 0x01
+                        </t>
+                        <t>
+                            TAC_PLUS_AUTHEN_SVC_ENABLE := 0x02
+                        </t>
+                        <t>
+                            TAC_PLUS_AUTHEN_SVC_PPP := 0x03
+                        </t>
+                        <t>
+                            TAC_PLUS_AUTHEN_SVC_ARAP := 0x04
+                        </t>
+                        <t>
+                            TAC_PLUS_AUTHEN_SVC_PT := 0x05
+                        </t>
+                        <t>
+                            TAC_PLUS_AUTHEN_SVC_RCMD := 0x06
+                        </t>
+                        <t>
+                            TAC_PLUS_AUTHEN_SVC_X25 := 0x07
+                        </t>
+                        <t>
+                            TAC_PLUS_AUTHEN_SVC_NASI := 0x08
+                        </t>
+                        <t>
+                            TAC_PLUS_AUTHEN_SVC_FWPROXY := 0x09
+                        </t>
+                    </list>
+                </t>
+                <t>
+                    The ENABLE service refers to a service requesting authentication
+                    in
+                    order to grant the user different privileges. This is comparable
+                    to
+                    the Unix "su(1)" command. A service value of NONE should only be
+                    used when none of the other service values are appropriate.
+                </t>
+                <t>
+                    user
+                </t>
+                <t>
+                    The username. It is encoded in [UTF-8]. It is optional in this
+                    packet,
+                    depending upon the class of authentication.
+                </t>
+                <t>
+                    port
+                </t>
+                <t>
+                    The ASCII name of the client port on which the authentication is
+                    taking place. The value of this field is client
+                    specific. (For
+                    example, Cisco uses "tty10" to denote the tenth tty line and
+                    "Async10" to denote the tenth async interface).
+                </t>
+                <t>
+                    rem_addr
+                </t>
+                <t>
+                    An ASCII string this is a "best effort" description of the
+                    remote
+                    location from which the user has connected to the client. It
+                    is
+                    intended to hold a network address if the user is connected via
+                    a
+                    network, a caller ID is the user is connected via ISDN or a POTS,
+                    or any other remote location information that is available. This
+                    field is optional (since the information may not be
+                    available).
+                </t>
+                <t>
+                    data
+                </t>
+                <t>
+                    This field is used to send data appropriate for the action and
+                    authen_type. It is described in more detail below.
+                </t>
+            </section>
+            <section anchor="TheAuthenticationREPLYPacketBody"
+                title="The Authentication REPLY Packet Body">
+                <t>
+                    The TACACS+ server sends only one type of authentication packet
+                    (a
+                    REPLY packet) to the client. The REPLY packet body looks as
+                    follows:
+                </t>
+
+                <figure>
+                    <artwork><![CDATA[
+ 1 2 3 4 5 6 7 8  1 2 3 4 5 6 7 8  1 2 3 4 5 6 7 8  1 2 3 4 5 6 7 8
++----------------+----------------+----------------+----------------+
+|     status     |      flags     |        server_msg len           |
++----------------+----------------+----------------+----------------+
+|           data len              |        server_msg ...
++----------------+----------------+----------------+----------------+
+|           data ...
++----------------+----------------+
+					]]></artwork>
+                </figure>
+                <t>
+                    status
+                </t>
+                <t>
+                    The current status of the authentication. Legal values are:
+                </t>
+                <t>
+                    <list>
+                        <t>
+                            TAC_PLUS_AUTHEN_STATUS_PASS := 0x01
+                        </t>
+                        <t>
+                            TAC_PLUS_AUTHEN_STATUS_FAIL :=
+                            0x02
+                        </t>
+                        <t>
+                            TAC_PLUS_AUTHEN_STATUS_GETDATA := 0x03
+                        </t>
+                        <t>
+                            TAC_PLUS_AUTHEN_STATUS_GETUSER := 0x04
+                        </t>
+                        <t>
+                            TAC_PLUS_AUTHEN_STATUS_GETPASS := 0x05
+                        </t>
+                        <t>
+                            TAC_PLUS_AUTHEN_STATUS_RESTART := 0x06
+                        </t>
+                        <t>
+                            TAC_PLUS_AUTHEN_STATUS_ERROR
+                            := 0x07
+                        </t>
+                        <t>
+                            TAC_PLUS_AUTHEN_STATUS_FOLLOW := 0x21
+                        </t>
+                    </list>
+                </t>
+                <t>
+                    flags
+                </t>
+                <t>
+                    Bitmapped flags that modify the action to be taken. The
+                    following
+                    values are
+                    defined:
+                </t>
+                <t>
+                    <list>
+                        <t>
+                            TAC_PLUS_REPLY_FLAG_NOECHO := 0x01
+                        </t>
+                    </list>
+                </t>
+                <t>
+                    server_msg
+                </t>
+                <t>
+                    A message to be displayed to the user. This field is optional.
+                    If
+                    it
+                    exists, it is intended to be presented to the user. US-ASCII
+                    charset must be used.
+                </t>
+                <t>
+                    data
+                </t>
+                <t>
+                    This field holds data that is a part of the authentication
+                    exchange and
+                    is intended for the client, not the user. Valid uses
+                    of
+                    this field
+                    are described below.
+                </t>
+
+            </section>
+            <section anchor="TheAuthenticationCONTINUEPacketBody"
+                title="The Authentication CONTINUE Packet Body">
+                <t>
+                    This packet is sent from the client to the server following the
+                    receipt
+                    of a REPLY packet.
+                </t>
+                <figure>
+                    <artwork><![CDATA[
+ 1 2 3 4 5 6 7 8  1 2 3 4 5 6 7 8  1 2 3 4 5 6 7 8  1 2 3 4 5 6 7 8
++----------------+----------------+----------------+----------------+
+|          user_msg len           |            data len             |
++----------------+----------------+----------------+----------------+
+|     flags      |  user_msg ...
++----------------+----------------+----------------+----------------+
+|    data ...
++----------------+
+					]]></artwork>
+                </figure>
+                <t>
+                    user_msg
+                </t>
+                <t>
+                    This field is the string that the user entered, or the client
+                    provided
+                    on behalf of the user, in response to the server_msg from
+                    a
+                    REPLY
+                    packet.
+                </t>
+                <t>
+                    data
+                </t>
+                <t>
+                    This field carries information that is specific to the action
+                    and
+                    the
+                    authen_type for this session. Valid uses of this field are
+                    described below.
+                </t>
+                <t>
+                    flags
+                </t>
+                <t>
+                    This holds the bitmapped flags that modify the action to be
+                    taken. The
+                    following values are defined:
+                </t>
+                <t>
+                    <list>
+                        <t>
+                            TAC_PLUS_CONTINUE_FLAG_ABORT := 0x01
+                        </t>
+                    </list>
+                </t>
+            </section>
+            <section anchor="DescriptionofAuthenticationProcess"
+                title="Description of Authentication Process">
+                <t>
+                    Authentications are classified by the action, authen_type and
+                    service fields in
+                    the START packet of the authentication Session.
+                    The user, priv_lvl,
+                    service, port and rem_addr in the START packet
+                    are all provided to
+                    help identify the conditions on the client.
+                </t>
+                <t>
+                    The information necessary to transact the authentication is
+                    passed in
+                    the data field of every START, REPLY and CONTINUE packet.
+                    The usage
+                    of this field varies according to the classification of
+                    the
+                    authentication, and is described below. For all REPLY packets,
+                    the
+                    server_msg may contain a message to be displayed to the user.
+                </t>
+                <t>
+                    A set of standard authentication classifications is defined in
+                    this
+                    document. Each authentication flow consists of a START packet.
+                    The
+                    server responds either with a request for more information
+                    (GETDATA, GETUSER or GETPASS) or a termination (PASS or FAIL). The
+                    actions and meanings when the server sends a RESTART, ERROR or
+                    FOLLOW are common and are described further below.
+                </t>
+                <t>
+                    When the REPLY status equals TAC_PLUS_AUTHEN_STATUS_GETDATA,
+                    TAC_PLUS_AUTHEN_STATUS_GETUSER or
+                    TAC_PLUS_AUTHEN_STATUS_GETPASS,
+                    then authentication continues and the server_msg may be used by
+                    the
+                    client to prompt the user for more information. The client MUST
+                    then return a CONTINUE packet containing the requested information
+                    in the user_msg field.
+                </t>
+                <t>
+                    All three cause the same action to be performed, but in the case
+                    of
+                    TAC_PLUS_AUTHEN_STATUS_GETUSER, the client can know that the
+                    information that the user responds with is a username, and for
+                    TAC_PLUS_AUTHEN_STATUS_GETPASS, that the user
+                    response represents
+                    a
+                    password. TAC_PLUS_AUTHEN_STATUS_GETDATA is the generic request
+                    for
+                    more information. If the TAC_PLUS_REPLY_FLAG_NOECHO flag is set
+                    in
+                    the REPLY, then the user response must not be echoed as it is
+                    entered. The data field is only used in the REPLY where
+                    explicitly
+                    defined below.
+                </t>
+                <section anchor="VersionBehaviour" title="Version Behaviour">
+                    <t>
+                        The TACACS+ protocol is versioned to allow revisions while
+                        maintaining backwards compatibility. The version
+                        number is in
+                        every packet header. The changes between minor_version 0 and 1
+                        apply only to the authentication process, and all deal with the
+                        way that CHAP and PAP authentications are handled. minor_version
+                        1
+                        may only be used for authentication classes that explicitly call
+                        for it in the table below:
+                    </t>
+                    <figure>
+                        <artwork><![CDATA[
+         LOGIN    CHPASS   SENDAUTH
+ASCII      v0	     v0       NA
+PAP        v1        NA       v1
+CHAP       v1        NA       v1
+MS-CHAP    v1        NA       v1
+										]]>
+                        </artwork>
+                    </figure>
+                    <t>
+                        When a server receives a packet with a minor_version that it
+                        does not
+                        support, it should return an ERROR status with the
+                        minor_version
+                        set to the closest supported value.
+                    </t>
+                    <t>
+                        In minor_version 0, CHAP and outbound PAP authentications were
+                        performed by the client sending a SENDPASS
+                        packet to the server.
+                        The SENDPASS requested a copy of the user's plaintext password
+                        so
+                        that the client could complete the authentication. The CHAP
+                        hashing was performed on the client. Inbound PAP performed a
+                        normal LOGIN, sending the username in the START packet and then
+                        waiting for a GETPASS and sending the password in a CONTINUE
+                        packet.
+                    </t>
+                    <t>
+                        In minor_version 1, CHAP and inbound PAP use LOGIN to perform
+                        inbound authentication and the exchanges use the
+                        data field so
+                        that the client only sends a single START packet and expects to
+                        receive a PASS or FAIL. SENDPASS has been
+                        deprecated and
+                        SENDAUTH
+                        introduced, so that the client can request authentication
+                        credentials for authenticating to a remote peer. SENDAUTH is only
+                        used for PPP when performing outbound authentication.
+                    </t>
+                    <t>
+                        NOTE: Only those requests which have changed from their
+                        minor_version 0
+                        implementation (i.e. CHAP, MS-CHAP and PAP
+                        authentications) should
+                        use the new minor_version number of 1. All
+                        other requests (i.e.
+                        all authorisation and accounting and ASCII
+                        authentication) MUST
+                        continue to use the same minor_version number
+                        of 0. The removal of
+                        SENDPASS was prompted by security concerns,
+                        and is no longer
+                        considered part of the TACACS+ protocol.
+                    </t>
+                </section>
+                <section anchor="CommonAuthenticationFlows"
+                    title="Common Authentication Flows">
+                    <t>
+                        This section describes the authentication flows that should be
+                        supported.
+                    </t>
+                    <t>
+                        Inbound ASCII Login
+                    </t>
+                    <figure>
+                        <artwork><![CDATA[
+	action = TAC_PLUS_AUTHEN_LOGIN
+	authen_type = TAC_PLUS_AUTHEN_TYPE_ASCII
+	minor_version = 0x0
+										]]>
+                        </artwork>
+                    </figure>
+                    <t>
+                        This is a standard ASCII authentication. The START packet may
+                        contain
+                        the username, but need not do so. The data fields in both
+                        the
+                        START and CONTINUE packets are not used for ASCII logins.
+                        There
+                        is
+                        a single START followed by zero or more pairs of REPLYs
+                        and
+                        CONTINUEs, followed by a terminating REPLY (PASS or FAIL).
+                    </t>
+                    <t>
+                        Inbound PAP Login
+                    </t>
+                    <figure>
+                        <artwork><![CDATA[
+	action = TAC_PLUS_AUTHEN_LOGIN
+	authen_type = TAC_PLUS_AUTHEN_TYPE_PAP
+	minor_version = 0x1
+										]]>
+                        </artwork>
+                    </figure>
+                    <t>
+                        The entire exchange MUST consist of a single
+                        START packet and a
+                        single REPLY. The START packet MUST contain a username and the
+                        data field MUST contain the PAP ASCII password. A PAP
+                        authentication only consists of a username and password
+                        <xref target="RFC1334">RFC 1334</xref>
+                        . The REPLY from the server MUST be either a
+                        PASS or FAIL.
+                    </t>
+                    <t>
+                        Inbound CHAP login
+                    </t>
+                    <figure>
+                        <artwork><![CDATA[
+	action = TAC_PLUS_AUTHEN_LOGIN
+	authen_type = TAC_PLUS_AUTHEN_TYPE_CHAP
+	minor_version = 0x1
+										]]>
+                        </artwork>
+                    </figure>
+                    <t>
+                        The entire exchange MUST consist of a single START packet and a
+                        single REPLY. The START packet MUST contain the
+                        username in the
+                        user field and the data field will be a concatenation of the PPP
+                        id, the challenge and the response.
+                    </t>
+                    <t>
+                        The length of the challenge value can be determined from the
+                        length
+                        of the data field minus the length of the id (always 1
+                        octet) and
+                        the length of the response field (always 16 octets).
+                    </t>
+                    <t>
+                        To perform the authentication, the server will
+                        run MD5 over the
+                        id, the user's secret and the challenge, as defined in the PPP
+                        Authentication RFC
+                        <xref target="RFC1334">RFC 1334</xref>
+                        and then compare that value with the response.
+                        The REPLY from
+                        the
+                        server MUST be a PASS or FAIL.
+                    </t>
+                    <t>
+                        Inbound MS-CHAP v1 login
+                    </t>
+                    <figure>
+                        <artwork><![CDATA[
+	action = TAC_PLUS_AUTHEN_LOGIN
+	authen_type = TAC_PLUS_AUTHEN_TYPE_MSCHAP
+	minor_version = 0x1
+										]]>
+                        </artwork>
+                    </figure>
+                    <t>
+                        The entire exchange MUST consist of a single START packet and a
+                        single REPLY. The START packet MUST contain the
+                        username in the
+                        user field and the data field will be a concatenation of the PPP
+                        id, the MS-CHAP challenge and the MS-CHAP response.
+                    </t>
+                    <t>
+                        The length of the challenge value can be determined from the
+                        length
+                        of the data field minus the length of the id (always 1
+                        octet) and
+                        the length of the response field (always 49 octets).
+                    </t>
+                    <t>
+                        To perform the authentication, the server will
+                        use a combination
+                        of MD4 and DES on the user's secret and the challenge, as
+                        defined
+                        in
+                        <xref target="RFC2433">RFC 2433</xref>
+                        and then compare the resulting value with the
+                        response. The
+                        REPLY
+                        from the server MUST be a PASS or FAIL.
+                    </t>
+                    <t>
+                        Inbound MS-CHAP v2 login
+                    </t>
+                    <figure>
+                        <artwork><![CDATA[
+	action = TAC_PLUS_AUTHEN_LOGIN
+	authen_type = TAC_PLUS_AUTHEN_TYPE_MSCHAP
+	minor_version = 0x1
+										]]>
+                        </artwork>
+                    </figure>
+                    <t>
+                        The entire exchange MUST consist of a single START packet and a
+                        single REPLY. The START packet MUST contain the
+                        username in the
+                        user field and the data field will be a concatenation of the PPP
+                        id, the MS-CHAP challenge and the MS-CHAP response.
+                    </t>
+                    <t>
+                        The length of the challenge value can be determined from the
+                        length
+                        of the data field minus the length of the id (always 1
+                        octet) and
+                        the length of the response field (always 49 octets).
+                    </t>
+                    <t>
+                        To perform the authentication, the server will
+                        use a the algorithm
+                        specified
+                        <xref target="RFC2759">RFC RFC2759</xref>
+                        on the user's secret and challenge
+                        and then compare the resulting
+                        value with the response. The
+                        REPLY
+                        from the server MUST be a PASS or
+                        FAIL.
+                    </t>
+                    <t>
+                        Outbound PAP request (Backward compatibility, not for new
+                        designs)
+                    </t>
+                    <figure>
+                        <artwork><![CDATA[
+	action = TAC_PLUS_AUTHEN_SENDAUTH
+	authen_type = TAC_PLUS_AUTHEN_TYPE_PAP
+	minor_version = 0x1
+										]]>
+                        </artwork>
+                    </figure>
+                    <t>
+                        This is used when the client needs to provide PAP
+                        authentication
+                        credentials to the remote PPP peer. The entire
+                        exchange MUST
+                        consist of a single START packet and a single REPLY.
+                        The START
+                        packet contains a username in the user field. A REPLY
+                        with
+                        status
+                        set to PASS MUST contain a cleartext password in the
+                        data field.
+                        Caution is urged when using this. By sending a
+                        cleartext
+                        password
+                        to
+                        the client, that password will then be passed
+                        to the remote
+                        PPP
+                        peer. It should be ensured that the provided
+                        password can never be
+                        used to authenticate back to the client. Use
+                        of this is
+                        discouraged, but supported for complete
+                        interoperability with
+                        the
+                        PPP protocol.
+                    </t>
+                    <t>
+                        Outbound CHAP request (Backward compatibility, not for new
+                        designs)
+                    </t>
+                    <figure>
+                        <artwork><![CDATA[
+	action = TAC_PLUS_AUTHEN_SENDAUTH
+	authen_type = TAC_PLUS_AUTHEN_TYPE_CHAP
+	minor_version = 0x1
+										]]>
+                        </artwork>
+                    </figure>
+                    <t>
+                        This is used when the client needs to provide CHAP
+                        authentication
+                        credentials to the remote PPP peer. The entire
+                        exchange MUST
+                        consist of a single START packet and a single REPLY.
+                        The START
+                        packet MUST contain the username in the user field and
+                        the data
+                        field will be a concatenation of the PPP id and the
+                        challenge.
+                    </t>
+                    <t>
+                        The length of the challenge value can be
+                        determined from the
+                        length of the data field minus the length of the id (always 1
+                        octet). The server will run MD5 over the id, the user's secret
+                        and
+                        the challenge, as defined in the PPP Authentication RFC
+                        <xref target="RFC1334">RFC 1334</xref>
+                        .
+                    </t>
+                    <t>
+                        The REPLY from the server MUST be a PASS or FAIL. If the status
+                        is
+                        PASS, then the data field MUST contain the 16 octet MD5 output
+                    </t>
+                    <t>
+                        Outbound MS-CHAP request (Backward compatibility, not for new
+                        designs)
+                    </t>
+                    <figure>
+                        <artwork><![CDATA[
+	action = TAC_PLUS_AUTHEN_SENDAUTH
+	authen_type = TAC_PLUS_AUTHEN_TYPE_MSCHAP
+	minor_version = 0x1
+										]]>
+                        </artwork>
+                    </figure>
+                    <t>
+                        This is used when the client needs to provide MS-CHAP
+                        authentication
+                        credentials to the remote PPP peer. The entire
+                        exchange MUST
+                        consist of a single START packet and a single REPLY.
+                        The START
+                        packet MUST contain the username in the user field and
+                        the data
+                        field will be a concatenation of the PPP id and the
+                        challenge.
+                    </t>
+                    <t>
+                        The length of the challenge value can be
+                        determined from the
+                        length of the data field minus the length of the id (always 1
+                        octet). The server will use MD4 and DES to process the user's
+                        secret and the challenge, as defined in
+                        <xref target="RFC2433">RFC 2433</xref>
+                        .
+                    </t>
+                    <t>
+                        The REPLY from the server MUST be a PASS or FAIL. If the status
+                        is
+                        PASS, then the data field MUST contain the 49-octet output, in
+                        which 24 octets are MD4 output for the Microsoft LAN Manager
+                        compatible challenge response, 24 octets are MD4 output for the
+                        Microsoft Windows NT compatible challenge response and 1 octet
+                        is
+                        the flag to determine which part of the response packet should be
+                        utilized.
+                    </t>
+                    <t>
+                        Enable Requests
+                    </t>
+                    <figure>
+                        <artwork><![CDATA[
+	action = TAC_PLUS_AUTHEN_LOGIN
+	priv_lvl = implementation dependent
+	authen_type = not used
+	service = TAC_PLUS_AUTHEN_SVC_ENABLE
+										]]>
+                        </artwork>
+                    </figure>
+                    <t>
+                        This is an ENABLE request, used to change the current running
+                        privilege level of a principal. The exchange MAY
+                        consist of
+                        multiple messages while the server collects the information it
+                        requires in order to allow changing the principal's privilege
+                        level. This exchange is very similar to an Inbound ASCII login
+                        (which see).
+                    </t>
+                    <t>
+                        In order to readily distinguish enable requests from other
+                        types
+                        of
+                        request, the value of the service field MUST be set to
+                        TAC_PLUS_AUTHEN_SVC_ENABLE when requesting an
+                        ENABLE. It MUST
+                        NOT
+                        be set to this value when requesting any other operation.
+                    </t>
+                    <t>
+                        ASCII change password request
+                    </t>
+                    <figure>
+                        <artwork><![CDATA[
+action = TAC_PLUS_AUTHEN_CHPASS
+authen_type = TAC_PLUS_AUTHEN_TYPE_ASCII
+										]]>
+                        </artwork>
+                    </figure>
+                    <t>
+                        This exchange consists of multiple messages while the server
+                        collects
+                        the information it requires in order to change the user's
+                        password. It is very similar to an ASCII login. The status value
+                        TAC_PLUS_AUTHEN_STATUS_GETPASS MUST only be used
+                        when requesting
+                        the "new" password. It MAY be sent multiple times. When
+                        requesting
+                        the "old" password, the status value MUST be set to
+                        TAC_PLUS_AUTHEN_STATUS_GETDATA.
+                    </t>
+                </section>
+                <section anchor="AbortinganAuthenticationSession"
+                    title="Aborting an Authentication Session">
+                    <t>
+                        The client may prematurely terminate a session by setting the
+                        TAC_PLUS_CONTINUE_FLAG_ABORT flag in the
+                        CONTINUE message. If
+                        this
+                        flag is set, the data portion of the message may contain an
+                        ASCII
+                        message explaining the reason for the abort. The session is
+                        terminated and no REPLY message is sent.
+                    </t>
+                    <t>
+                        There are three other possible return status values that can be
+                        used in
+                        a REPLY packet. These can be sent regardless of the action
+                        or
+                        authen_type. Each of these indicates that the TACACS+
+                        authentication session should be terminated. In each case, the
+                        server_msg may contain a message to be displayed to the user.
+                    </t>
+                    <t>
+                        When the status equals TAC_PLUS_AUTHEN_STATUS_FOLLOW the packet
+                        indicates that the TACACS+ server requests that
+                        authentication
+                        should be performed with an alternate server. The data field
+                        MUST
+                        contain ASCII text describing one or more servers. A server
+                        description appears like this:
+                    </t>
+                    <t>
+                        [@&lt;protocol&gt;@]&lt;host&gt;>[@&lt;key&gt;]
+                    </t>
+                    <t>
+                        The protocol and key are optional. The protocol can describe an
+                        alternate way of performing the authentication,
+                        other than
+                        TACACS+. If the protocol is not present, then TACACS+ is
+                        assumed.
+                    </t>
+                    <t>
+                        Protocols are ASCII numbers corresponding to the methods listed
+                        in the
+                        authen_method field of authorization packets (defined
+                        below). The
+                        host is specified as either a fully qualified domain
+                        name, or an
+                        ASCII numeric IP address specified as octets separated
+                        by dots
+                        (`.').
+                    </t>
+                    <t>
+                        If a key is supplied, the client MAY use the key in order to
+                        authenticate to that host. If more than one host
+                        is specified,
+                        they MUST be separated by an ASCII Carriage Return (0x0D).
+                    </t>
+                    <t>
+                        Use of the hosts in a TAC_PLUS_AUTHEN_STATUS_FOLLOW packet is
+                        at
+                        the
+                        discretion of the TACACS+ client. It may choose to use any
+                        one,
+                        all or none of these hosts. If it chooses to use none, then
+                        it
+                        MUST
+                        treat the authentication as if the return status was
+                        TAC_PLUS_AUTHEN_STATUS_FAIL.
+                    </t>
+                    <t>
+                        While the order of hosts in this packet indicates a preference,
+                        but the
+                        client is not obliged to use that ordering.
+                    </t>
+                    <t>
+                        If the status equals TAC_PLUS_AUTHEN_STATUS_ERROR, then the
+                        host
+                        is
+                        indicating that it is experiencing an unrecoverable error
+                        and
+                        the
+                        authentication should proceed as if that host could not be
+                        contacted. The data field may contain a message to be printed on
+                        an administrative console or log.
+                    </t>
+                    <t>
+                        If the status equals TAC_PLUS_AUTHEN_STATUS_RESTART, then the
+                        authentication sequence should be restarted with
+                        a new START
+                        packet from the client. This REPLY packet indicates that the
+                        current authen_type value (as specified in the START packet) is
+                        not acceptable for this session, but that others may be.
+                    </t>
+                    <t>
+                        The TAC_PLUS_AUTHEN_STATUS_RESTART REPLY packet may contain a
+                        list of
+                        valid authen_type values in the data portion of the
+                        packet.
+                        The
+                        authen_type values are a single byte in length so the
+                        data_len
+                        value indicates the number of authen_type values
+                        included. This
+                        packet is only currently intended for PPP
+                        authentication when
+                        multiple authentication mechanisms are
+                        available and can be
+                        negotiated between the client and the remote
+                        peer. This also
+                        requires future PPP authentication extensions
+                        which have not yet
+                        been passed through the IETF. If a client
+                        chooses not to accept
+                        the
+                        TAC_PLUS_AUTHEN_STATUS_RESTART packet,
+                        then it should be
+                        TREATED as
+                        if the status was
+                        TAC_PLUS_AUTHEN_STATUS_FAIL.
+                    </t>
+                </section>
+            </section>
+        </section>
+        <section anchor="Authorization" title="Authorization">
+            <t>
+                TACACS+ authorization is an extensible way of providing remote
+                authorization services. An authorization session is
+                defined as a
+                single pair of messages, a REQUEST followed by a RESPONSE.
+            </t>
+            <t>
+                The authorization REQUEST message contains a fixed set of fields
+                that
+                describe the authenticity of the user or process, and a
+                variable
+                set
+                of arguments that describe the services and options for
+                which
+                authorization is requested.
+            </t>
+            <t>
+                The RESPONSE contains a variable set of response arguments
+                (attribute-value pairs) that can restrict or modify the
+                clients
+                actions.
+            </t>
+            <t>
+                The arguments in both a REQUEST and a RESPONSE can be specified
+                as
+                either mandatory or optional. An optional argument is one that
+                may
+                or
+                may not be used, modified or even understood by the
+                recipient.
+            </t>
+            <t>
+                A mandatory argument MUST be both understood and used. This
+                allows
+                for extending the attribute list while providing secure
+                backwards
+                compatibility.
+            </t>
+            <section anchor="TheAuthorizationREQUESTPacketBody"
+                title="The Authorization REQUEST Packet Body">
+
+                <figure>
+                    <artwork><![CDATA[
+  1 2 3 4 5 6 7 8  1 2 3 4 5 6 7 8  1 2 3 4 5 6 7 8  1 2 3 4 5 6 7 8 
+ +----------------+----------------+----------------+----------------+
+ |  authen_method |    priv_lvl    |  authen_type   | authen_service |
+ +----------------+----------------+----------------+----------------+
+ |    user len    |    port len    |  rem_addr len  |    arg_cnt     |
+ +----------------+----------------+----------------+----------------+
+ |   arg 1 len    |   arg 2 len    |      ...       |   arg N len    |
+ +----------------+----------------+----------------+----------------+
+ |   user ...
+ +----------------+----------------+----------------+----------------+
+ |   port ...
+ +----------------+----------------+----------------+----------------+
+ |   rem_addr ...
+ +----------------+----------------+----------------+----------------+
+ |   arg 1 ...
+ +----------------+----------------+----------------+----------------+
+ |   arg 2 ...
+ +----------------+----------------+----------------+----------------+
+ |   ...
+ +----------------+----------------+----------------+----------------+
+ |   arg N ...
+ +----------------+----------------+----------------+----------------+
+
+					]]></artwork>
+                </figure>
+                <t>
+                    authen_method
+                </t>
+                <t>
+                    This indicates the authentication method used by the client to
+                    acquire
+                    the user information.
+                </t>
+                <t>
+                    <list>
+                        <t>
+                            TAC_PLUS_AUTHEN_METH_NOT_SET := 0x00
+                        </t>
+                        <t>
+                            TAC_PLUS_AUTHEN_METH_NONE :=
+                            0x01
+                        </t>
+                        <t>
+                            TAC_PLUS_AUTHEN_METH_KRB5 := 0x02
+                        </t>
+                        <t>
+                            TAC_PLUS_AUTHEN_METH_LINE :=
+                            0x03
+                        </t>
+                        <t>
+                            TAC_PLUS_AUTHEN_METH_ENABLE := 0x04
+                        </t>
+                        <t>
+                            TAC_PLUS_AUTHEN_METH_LOCAL
+                            := 0x05
+                        </t>
+                        <t>
+                            TAC_PLUS_AUTHEN_METH_TACACSPLUS := 0x06
+                        </t>
+                        <t>
+                            TAC_PLUS_AUTHEN_METH_GUEST := 0x08
+                        </t>
+                        <t>
+                            TAC_PLUS_AUTHEN_METH_RADIUS :=
+                            0x10
+                        </t>
+                        <t>
+                            TAC_PLUS_AUTHEN_METH_KRB4 := 0x11
+                        </t>
+                        <t>
+                            TAC_PLUS_AUTHEN_METH_RCMD :=
+                            0x20
+                        </t>
+                    </list>
+                </t>
+                <t>
+                    KRB5 and KRB4 are Kerberos version 5 and 4. LINE refers to a
+                    fixed
+                    password associated with the line used to gain access. LOCAL
+                    is a
+                    client local user database. ENABLE is a command that
+                    authenticates
+                    in order to grant new privileges. TACACSPLUS is, of
+                    course,
+                    TACACS+. GUEST is an unqualified guest authentication, such
+                    as an
+                    ARAP guest login. RADIUS is the Radius authentication
+                    protocol.
+                    RCMD refers to authentication provided via the R-command
+                    protocols
+                    from Berkeley Unix. (One should be aware of the security
+                    limitations to R-command authentication.)
+                </t>
+                <t>
+                    priv_lvl
+                </t>
+                <t>
+                    This field matches the priv_lvl field in
+                    authentication request and
+                    is described in the
+                    <xref target="PrivilegeLevel">Privilege Level section</xref>
+                    below. It indicates the users current privilege
+                    level.
+                </t>
+                <t>
+                    authen_type
+                </t>
+                <t>
+                    This field matches the authen_type field in the
+                    <xref target="Authentication">authentication section</xref>
+                    above. It indicates the type of authentication that
+                    was
+                    performed.
+                </t>
+                <t>
+                    authen_service
+                </t>
+                <t>
+                    This field matches the service field in the
+                    <xref target="Authentication">authentication section</xref>
+                    above. It indicates the service through which the
+                    user
+                    authenticated.
+                </t>
+                <t>
+                    user
+                </t>
+                <t>
+                    This field contains the user's account name.
+                </t>
+                <t>
+                    port
+                </t>
+                <t>
+                    This field matches the port field in the
+                    <xref target="Authentication">authentication section</xref>
+                    above.
+                </t>
+                <t>
+                    rem_addr
+                </t>
+                <t>
+                    This field matches the rem_addr field in the
+                    <xref target="Authentication">authentication section</xref>
+                    above.
+                </t>
+                <t>
+                    arg_cnt
+                </t>
+                <t>
+                    The number of authorization arguments to follow
+                </t>
+                <t>
+                    arg
+                </t>
+                <t>
+                    An attribute-value pair that describes the command to be
+                    performed.
+                    (see below)
+                </t>
+                <t>
+                    The authorization arguments in both the REQUEST and the RESPONSE
+                    are
+                    attribute-value pairs. The attribute and the value are in a
+                    single
+                    US-ASCII string and are separated by either a "=" (0X3D) or a
+                    "*"
+                    (0X2A). The equals sign indicates a mandatory argument. The
+                    asterisk indicates an optional one.
+                </t>
+                <t>
+                    Optional arguments are ones that may be disregarded by either
+                    client or
+                    server. Mandatory arguments require that the receiving
+                    side
+                    understands the attribute and will act on it. If the client
+                    receives a mandatory argument that it cannot oblige or does not
+                    understand, it MUST consider the authorization to have failed. It
+                    is legal to send an attribute-value pair with a NULL (zero
+                    length)
+                    value.
+                </t>
+                <t>
+                    Attribute-value strings are not NULL terminated, rather their
+                    length value
+                    indicates their end. The maximum length of an
+                    attribute-value
+                    string is 255 characters.
+                </t>
+            </section>
+            <section anchor="TheAuthorizationRESPONSEPacketBody"
+                title="The Authorization RESPONSE Packet Body">
+                <figure>
+                    <artwork><![CDATA[
+ 1 2 3 4 5 6 7 8  1 2 3 4 5 6 7 8  1 2 3 4 5 6 7 8  1 2 3 4 5 6 7 8
++----------------+----------------+----------------+----------------+
+|    status      |     arg_cnt    |         server_msg len          |
++----------------+----------------+----------------+----------------+
++            data len             |    arg 1 len   |    arg 2 len   |
++----------------+----------------+----------------+----------------+
+|      ...       |   arg N len    |         server_msg ...
++----------------+----------------+----------------+----------------+
+|   data ...
++----------------+----------------+----------------+----------------+
+|   arg 1 ...
++----------------+----------------+----------------+----------------+
+|   arg 2 ...
++----------------+----------------+----------------+----------------+
+|   ...
++----------------+----------------+----------------+----------------+
+|   arg N ...
++----------------+----------------+----------------+----------------+
+					]]></artwork>
+                </figure>
+                <t>
+
+
+                    status This field indicates the authorization status
+                </t>
+                <t>
+                    <list>
+                        <t>
+                            TAC_PLUS_AUTHOR_STATUS_PASS_ADD := 0x01
+                        </t>
+                        <t>
+                            TAC_PLUS_AUTHOR_STATUS_PASS_REPL := 0x02
+                        </t>
+                        <t>
+                            TAC_PLUS_AUTHOR_STATUS_FAIL := 0x10
+                        </t>
+                        <t>
+                            TAC_PLUS_AUTHOR_STATUS_ERROR :=
+                            0x11
+                        </t>
+                        <t>
+                            TAC_PLUS_AUTHOR_STATUS_FOLLOW := 0x21
+                        </t>
+                    </list>
+                </t>
+                <t>
+
+                    server_msg
+                </t>
+                <t>
+                    This is an ASCII string that may be presented to the user. The
+                    decision
+                    to present this message is client specific.
+                </t>
+                <t>
+                    data
+                </t>
+                <t>
+                    This is an ASCII string that may be presented on an
+                    administrative
+                    display, console or log. The decision to present
+                    this
+                    message is
+                    client specific.
+                </t>
+                <t>
+                    arg_cnt
+                </t>
+                <t>
+                    The number of authorization arguments to follow.
+                </t>
+                <t>
+                    arg
+                </t>
+                <t>
+                    An attribute-value pair that describes the command to be
+                    performed.
+                    (see below)
+                </t>
+                <t>
+                    If the status equals TAC_PLUS_AUTHOR_STATUS_FAIL, then the
+                    appropriate action is to deny the user action.
+                </t>
+                <t>
+                    If the status equals TAC_PLUS_AUTHOR_STATUS_PASS_ADD, then the
+                    arguments specified in the request are authorized
+                    and the
+                    arguments
+                    in the response are to be used IN ADDITION to those
+                    arguments.
+                </t>
+                <t>
+                    If the status equals TAC_PLUS_AUTHOR_STATUS_PASS_REPL then the
+                    arguments in the request are to be completely
+                    replaced by the
+                    arguments in the response.
+                </t>
+                <t>
+                    If the intended action is to approve the authorization with no
+                    modifications, then the status should be set to
+                    TAC_PLUS_AUTHOR_STATUS_PASS_ADD and the arg_cnt
+                    should be set to
+                    0.
+                </t>
+                <t>
+                    A status of TAC_PLUS_AUTHOR_STATUS_ERROR indicates an error
+                    occurred
+                    on the server.
+                </t>
+                <t>
+                    When the status equals TAC_PLUS_AUTHOR_STATUS_FOLLOW, then the
+                    arg_cnt
+                    MUST be 0. In that case, the actions to be taken and the
+                    contents
+                    of the data field are identical to the
+                    TAC_PLUS_AUTHEN_STATUS_FOLLOW status for Authentication. None of
+                    the arg values have any relevance if an ERROR is set, and must be
+                    ignored.
+                </t>
+            </section>
+        </section>
+        <section anchor="Accounting" title="Accounting">
+            <section anchor="TheAccountREQUESTPacketBody" title="The Account REQUEST Packet Body">
+                <figure>
+                    <artwork><![CDATA[
+ 1 2 3 4 5 6 7 8  1 2 3 4 5 6 7 8  1 2 3 4 5 6 7 8  1 2 3 4 5 6 7 8
++----------------+----------------+----------------+----------------+
+|      flags     |  authen_method |    priv_lvl    |  authen_type   |
++----------------+----------------+----------------+----------------+
+| authen_service |    user len    |    port len    |  rem_addr len  |
++----------------+----------------+----------------+----------------+
+|    arg_cnt     |   arg 1 len    |   arg 2 len    |      ...       |
++----------------+----------------+----------------+----------------+
+|   arg N len    |    user ...
++----------------+----------------+----------------+----------------+
+|   port ...
++----------------+----------------+----------------+----------------+
+|   rem_addr ...
++----------------+----------------+----------------+----------------+
+|   arg 1 ...
++----------------+----------------+----------------+----------------+
+|   arg 2 ...
++----------------+----------------+----------------+----------------+
+|   ...
++----------------+----------------+----------------+----------------+
+|   arg N ...
++----------------+----------------+----------------+----------------+
+
+					]]></artwork>
+                </figure>
+                <t>
+                    flags
+                </t>
+                <t>
+                    This holds bitmapped flags.
+                </t>
+                <t>
+                    <list>
+                        <t>
+                            TAC_PLUS_ACCT_FLAG_START := 0x02
+                        </t>
+                        <t>
+                            TAC_PLUS_ACCT_FLAG_STOP := 0x04
+                        </t>
+                        <t>
+                            TAC_PLUS_ACCT_FLAG_WATCHDOG := 0x08
+                        </t>
+                    </list>
+
+                </t>
+                <t>
+                    All other fields are defined in the authorization and
+                    authentication
+                    sections above and have the same semantics.
+                </t>
+                <t>
+                    See section 12 Accounting Attribute-value Pairs for the
+                    dictionary of
+                    attributes relevant to accounting.
+                </t>
+            </section>
+            <section anchor="TheAccountingREPLYPacketBody"
+                title="The Accounting REPLY Packet Body">
+                <t>
+                    The response to an accounting message is used to indicate that
+                    the
+                    accounting function on the server has completed. The server
+                    should
+                    reply with success only when the record has been committed
+                    to
+                    the
+                    required level of security, relieving the burden on the
+                    client
+                    from
+                    ensuring any better form of accounting is required.
+                </t>
+                <figure>
+                    <artwork><![CDATA[
+ 1 2 3 4 5 6 7 8  1 2 3 4 5 6 7 8  1 2 3 4 5 6 7 8  1 2 3 4 5 6 7 8
++----------------+----------------+----------------+----------------+
+|         server_msg len          |            data len             |
++----------------+----------------+----------------+----------------+
+|     status     |         server_msg ...
++----------------+----------------+----------------+----------------+
+|     data ...
++----------------+
+					]]></artwork>
+                </figure>
+
+                <t>
+                    status
+                </t>
+                <t>
+                    This is the return status. Values are:
+                </t>
+                <t>
+                    <list>
+                        <t>
+                            TAC_PLUS_ACCT_STATUS_SUCCESS := 0x01
+                        </t>
+                        <t>
+                            TAC_PLUS_ACCT_STATUS_ERROR :=
+                            0x02
+                        </t>
+                        <t>
+                            TAC_PLUS_ACCT_STATUS_FOLLOW := 0x21
+                        </t>
+                    </list>
+                </t>
+                <t>
+                    server_msg
+                </t>
+                <t>
+                    This is an ASCII string that may be presented to the user. The
+                    decision
+                    to present this message is client specific.
+                </t>
+                <t>
+                    data
+                </t>
+                <t>
+                    This is an ASCII string that may be presented on an
+                    administrative
+                    display, console or log. The decision to present
+                    this
+                    message is
+                    client specific.
+                </t>
+                <t>
+                    When the status equals TAC_PLUS_ACCT_STATUS_FOLLOW, then the
+                    actions to
+                    be taken and the contents of the data field are
+                    identical
+                    to the
+                    TAC_PLUS_AUTHEN_STATUS_FOLLOW status for
+                    Authentication.
+                </t>
+                <t>
+                    The server MUST terminate the session after sending a REPLY.
+                </t>
+                <t>
+                    The TAC_PLUS_ACCT_FLAG_START flag indicates that this is a start
+                    accounting message. Start messages should only be
+                    sent once when
+                    a
+                    task is started. The TAC_PLUS_ACCT_FLAG_STOP indicates that this
+                    is
+                    a stop record and that the task has terminated. The
+                    TAC_PLUS_ACCT_FLAG_WATCHDOG flag means that this is
+                    an update
+                    record. Update records are sent at the client's discretion when
+                    the
+                    task is still running.
+                </t>
+                <t>
+                    Summary of Accounting Packets
+                    <figure>
+                        <artwork><![CDATA[
++----------+-------+-------+-------------+-------------------------+
+| Watchdog | Stop  | Start | Flags & 0xE | Meaning                 | 
++----------+-------+-------+-------------+-------------------------+
+|    0     |   0   |   0   |      0      | INVALID                 |
+|    0     |   0   |   1   |      2      | Start Accounting Record |
+|    0     |   1   |   0   |      4      | Stop Accounting Record  |
+|    0     |   1   |   1   |      6      | INVALID                 |
+|    1     |   0   |   0   |      8      | Watchdog, no update     |
+|    1     |   0   |   1   |      A      | Watchdog, with update   |
+|    1     |   1   |   0   |      C      | INVALID                 |
+|    1     |   1   |   1   |      E      | INVALID                 |
++----------+-------+-------+-------------+-------------------------+
+					]]></artwork>
+                    </figure>
+                    The START and STOP flags are mutually exclusive.
+                    When the
+                    WATCHDOG
+                    flag is set along with the START flag, it indicates that the
+                    update
+                    record is a duplicate of the original START record. If the
+                    START
+                    flag is not set, then this indicates a minimal record
+                    indicating
+                    only that task is still running. The STOP flag MUST NOT
+                    be set in
+                    conjunction with the WATCHDOG flag.
+                </t>
+            </section>
+        </section>
+        <section anchor="AttributeValuePairs" title="Attribute-Value Pairs">
+            <t>
+                TACACS+ is intended to be an extensible protocol. The attributes
+                used in
+                Authorization and Accounting are not fixed. Some attributes
+                are
+                defined below for common use cases, clients MUST use these
+                attributes when supporting the corresponding use cases.
+            </t>
+            <t>
+                All numeric values in an attribute-value string are provided as
+                decimal
+                ASCII numbers, unless otherwise stated.
+            </t>
+            <t>
+                All boolean attributes are encoded with values "true" or "false".
+            </t>
+            <t>
+                It is recommended that hosts be specified as a numeric address so
+                as
+                to avoid any ambiguities.
+            </t>
+            <t>
+                Absolute times should be specified in seconds since the epoch,
+                12:00am Jan 1
+                1970. The timezone MUST be UTC unless a timezone
+                attribute is
+                specified.
+            </t>
+            <t>
+                A value of NULL means an attribute with a zero length string for
+                its
+                value i.e. cmd=NULL is actually transmitted as the string of 4
+                characters "cmd=".
+            </t>
+            <section anchor="AuthorizationAttributes" title="Authorization Attributes">
+                <t>
+                    service
+                </t>
+                <t>
+                    The primary service. Specifying a service attribute indicates
+                    that
+                    this is a request for authorization or accounting of that
+                    service.
+                    Current values are "slip", "ppp", "shell", "tty-server",
+                    "connection", "system" and "firewall". This attribute MUST always
+                    be included.
+                </t>
+                <t>
+                    protocol
+                </t>
+                <t>
+                    a protocol that is a subset of a service. An example would be
+                    any
+                    PPP NCP. Currently known values are "lcp", "ip", "ipx",
+                    "atalk",
+                    "vines", "lat", "xremote", "tn3270", "telnet", "rlogin",
+                    "pad",
+                    "vpdn", "ftp", "http", "deccp", "osicp" and "unknown".
+                </t>
+                <t>
+                    cmd
+                </t>
+                <t>
+                    a shell (exec) command. This indicates the command name for a
+                    shell
+                    command that is to be run. This attribute MUST be specified
+                    if
+                    service equals "shell". A NULL value indicates that the shell
+                    itself is being referred to.
+                </t>
+                <t>
+                    cmd-arg
+                </t>
+                <t>
+                    an argument to a shell (exec) command. This indicates an
+                    argument
+                    for
+                    the shell command that is to be run. Multiple cmd-arg
+                    attributes
+                    may be specified, and they are order dependent.
+                </t>
+                <t>
+                    acl
+                </t>
+                <t>
+                    ASCII number representing a connection access list. Used only
+                    when
+                    service=shell and cmd=NULL
+                </t>
+                <t>
+                    inacl
+                </t>
+                <t>
+                    ASCII identifier for an interface input access list.
+                </t>
+                <t>
+                    outacl
+                </t>
+                <t>
+                    ASCII identifier for an interface output access list.
+                </t>
+                <t>
+                    zonelist
+                </t>
+                <t>
+                    A numeric zonelist value. (Applicable to AppleTalk only).
+                </t>
+                <t>
+                    addr
+                </t>
+                <t>
+                    a network address
+                </t>
+                <t>
+                    addr-pool
+                </t>
+                <t>
+                    The identifier of an address pool from which the client should
+                    assign
+                    an address.
+                </t>
+                <t>
+                    routing
+                </t>
+                <t>
+                    A boolean. Specifies whether routing information is to be
+                    propagated
+                    to, and accepted from this interface.
+                </t>
+                <t>
+                    route
+                </t>
+                <t>
+                    Indicates a route that is to be applied to this interface.
+                    Values
+                    MUST be of
+                    the form "&lt;dst_address&gt; &lt;mask&gt;
+                    [&lt;routing_addr&gt;]".
+                    If a &lt;routing_addr&gt; is not
+                    specified,
+                    the resulting route
+                    should be via the requesting peer.
+                </t>
+                <t>
+                    timeout
+                </t>
+                <t>
+                    an absolute timer for the connection (in minutes). A value of
+                    zero
+                    indicates no timeout.
+                </t>
+                <t>
+                    idletime
+                </t>
+                <t>
+                    an idle-timeout for the connection (in minutes). A value of zero
+                    indicates no timeout.
+                </t>
+                <t>
+                    autocmd
+                </t>
+                <t>
+                    an auto-command to run. Used only when service=shell and
+                    cmd=NULL
+                </t>
+                <t>
+                    noescape
+                </t>
+                <t>
+                    Boolean. Prevents user from using an escape character. Used only
+                    when
+                    service=shell and cmd=NULL
+                </t>
+                <t>
+                    nohangup
+                </t>
+                <t>
+                    Boolean. Do no disconnect after an automatic command. Used only
+                    when
+                    service=shell and cmd=NULL
+                </t>
+                <t>
+                    priv-lvl
+                </t>
+                <t>
+                    privilege level to be assigned. Please refer to the
+                    <xref target="PrivilegeLevel">Privilege Level section</xref>
+                    below.
+                </t>
+                <t>
+                    remote_user
+                </t>
+                <t>
+                    remote userid (authen_method must have the value
+                    TAC_PLUS_AUTHEN_METH_RCMD). In the case of rcmd
+                    authorizations,
+                    the
+                    authen_method will be set to TAC_PLUS_AUTHEN_METH_RCMD and the
+                    remote_user and remote_host attributes will provide the remote
+                    user
+                    and host information to enable rhost style authorization. The
+                    response may request that a privilege level be set for the user.
+                </t>
+                <t>
+                    remote_host
+                </t>
+                <t>
+                    remote host (authen_method must have the value
+                    TAC_PLUS_AUTHEN_METH_RCMD)
+                </t>
+                <t>
+                    callback-dialstring
+                </t>
+                <t>
+                    Indicates that callback should be done. Value is NULL, or a
+                    dialstring. A
+                    NULL value indicates that the service MAY choose to
+                    get the
+                    dialstring through other means.
+                </t>
+                <t>
+                    callback-line
+                </t>
+                <t>
+                    The line number to use for a callback.
+                </t>
+                <t>
+                    callback-rotary
+                </t>
+                <t>
+                    The rotary number to use for a callback.
+                </t>
+                <t>
+                    nocallback-verify
+                </t>
+                <t>
+                    Do not require authentication after callback.
+                </t>
+            </section>
+            <section anchor="AccountingAttributes" title="Accounting Attributes">
+                <t>
+                    The following new attributes are defined for TACACS+
+                    accounting
+                    only. When these attribute-value pairs are included in the
+                    argument
+                    list, they should precede any attribute-value pairs that
+                    are
+                    defined
+                    in the
+                    <xref target="Authorization">authorization section</xref>
+                    above.
+                </t>
+                <t>
+                    task_id
+                </t>
+                <t>
+                    Start and stop records for the same event MUST have matching
+                    task_id
+                    attribute values. The client must not reuse a specific
+                    task_id in a
+                    start record until it has sent a stop record for that
+                    task_id.
+                </t>
+                <t>
+                    start_time
+                </t>
+                <t>
+                    The time the action started ().
+                </t>
+                <t>
+                    stop_time
+                </t>
+                <t>
+                    The time the action stopped (in seconds since the epoch.)
+                </t>
+                <t>
+                    elapsed_time
+                </t>
+                <t>
+                    The elapsed time in seconds for the action. Useful when the
+                    device
+                    does not keep real time.
+                </t>
+                <t>
+                    timezone
+                </t>
+                <t>
+                    The timezone abbreviation for all timestamps included in this
+                    packet.
+                </t>
+                <t>
+                    event
+                </t>
+                <t>
+                    Used only when "service=system". Current values are "net_acct",
+                    "cmd_acct", "conn_acct", "shell_acct" "sys_acct" and
+                    "clock_change". These indicate system level changes.
+                    The flags
+                    field SHOULD indicate whether the service started or stopped.
+                </t>
+                <t>
+                    reason
+                </t>
+                <t>
+                    Accompanies an event attribute. It describes why the event
+                    occurred.
+                </t>
+                <t>
+                    bytes
+                </t>
+                <t>
+                    The number of bytes transferred by this action
+                </t>
+                <t>
+                    bytes_in
+                </t>
+                <t>
+                    The number of input bytes transferred by this action
+                </t>
+                <t>
+                    bytes_out
+                </t>
+                <t>
+                    The number of output bytes transferred by this action
+                </t>
+                <t>
+                    paks
+                </t>
+                <t>
+                    The number of packets transferred by this action.
+                </t>
+                <t>
+                    paks_in
+                </t>
+                <t>
+                    The number of input packets transferred by this action.
+                </t>
+                <t>
+                    paks_out
+                </t>
+                <t>
+                    The number of output packets transferred by this action.
+                </t>
+                <t>
+                    status
+                </t>
+                <t>
+                    The numeric status value associated with the action. This is a
+                    signed
+                    four (4) byte word in network byte order. 0 is defined as
+                    success.
+                    Negative numbers indicate errors. Positive numbers
+                    indicate
+                    non-error failures. The exact status values may be defined
+                    by the
+                    client.
+                </t>
+                <t>
+                    err_msg
+                </t>
+                <t>
+                    An ASCII string describing the status of the action.
+                </t>
+            </section>
+        </section>
+        <section anchor="PrivilegeLevel" title="Privilege Levels">
+            <t>
+                The TACACS+ Protocol supports flexible authorization schemes
+                through the extensible attributes. One
+                scheme is built in to the
+                protocol: Privilege Levels.
+                Privilege Levels are ordered values from
+                0 to 15 with each level representing
+                a privilege level that is a
+                superset
+                of the next lower value.
+                Pre-defined values are:
+            </t>
+            <t>
+                <list>
+                    <t>
+                        TAC_PLUS_PRIV_LVL_MAX := 0x0f
+                    </t>
+                    <t>
+                        TAC_PLUS_PRIV_LVL_ROOT := 0x0f
+                    </t>
+                    <t>
+                        TAC_PLUS_PRIV_LVL_USER := 0x01
+                    </t>
+                    <t>
+                        TAC_PLUS_PRIV_LVL_MIN := 0x00
+                    </t>
+                </list>
+            </t>
+            <t>
+                If a client uses a different privilege level scheme, then it
+                must
+                map the privilege level to scheme above.
+            </t>
+            <t>
+                Privilege Levels are applied in two ways in the TACACS+ protocol:
+            </t>
+            <t>
+                <list>
+                    <t>
+                        - As an argument in authorization EXEC phase (when service=shell
+                        and
+                        cmd=NULL), where it is primarily used to set the initial
+                        privilege
+                        level for the EXEC session.
+
+                    </t>
+                    <t>
+                        - In the packet headers for Authentication, Authorization and
+                        Accounting. The privilege level in the header is
+                        primarily
+                        significant in the Authentication phase for enable
+                        authentication
+                        where a different privilege level is required.
+                    </t>
+                </list>
+            </t>
+            <t>
+                The use of Privilege levels to determine session-based access to
+                commands and resources is not mandatory for clients, but
+                it is in
+                common use so SHOULD be supported by servers.
+            </t>
+        </section>
+
+    </middle>
+
+    <back>
+        <references>
+            <reference anchor="TheDraft"
+                target="https://tools.ietf.org/html/draft-grant-tacacs-02">
+                <front>
+                    <title>The TACACS+ Protocol Version 1.78</title>
+                    <author initials="D." surname="Carrel"
+                        fullname="D. Carrel">
+                    </author>
+                    <author initials="L." surname="Grant"
+                        fullname="Lol Grant">
+                    </author>
+
+                    <date month="June" year="1997" />
+                </front>
+            </reference>
+
+            <reference anchor='RFC1321'>
+
+                <front>
+                    <title abbrev='MD5 Message-Digest Algorithm'>The MD5 Message-Digest Algorithm</title>
+                    <author initials='R.' surname='Rivest'
+                        fullname='Ronald L. Rivest'>
+                        <organization>Massachusetts Institute of
+                            Technology, (MIT)
+                            Laboratory for Computer Science</organization>
+                        <address>
+                            <postal>
+                                <street>545 Technology Square</street>
+                                <street>NE43-324</street>
+                                <city>Cambridge</city>
+                                <region>MA</region>
+                                <code>02139-1986</code>
+                                <country>US</country>
+                            </postal>
+                            <phone>+1 617 253 5880</phone>
+                            <email>rivest@theory.lcs.mit.edu</email>
+                        </address>
+                    </author>
+                    <date year='1992' month='April' />
+                </front>
+
+                <seriesInfo name='RFC' value='1321' />
+                <format type='TXT' octets='35222'
+                    target='http://www.rfc-editor.org/rfc/rfc1321.txt' />
+            </reference>
+
+            <reference anchor="RFC1334"
+                target="http://www.rfc-editor.org/info/rfc1334">
+                <front>
+                    <title>PPP Authentication Protocols</title>
+                    <author initials="B." surname="Lloyd"
+                        fullname="B. Lloyd">
+                        <organization />
+                    </author>
+                    <author initials="W." surname="Simpson"
+                        fullname="W. Simpson">
+                        <organization />
+                    </author>
+                    <date year="1992" month="October" />
+                    <abstract>
+                        <t>This document defines two protocols for
+                            Authentication: the
+                            Password Authentication Protocol and the Challenge-Handshake
+                            Authentication Protocol. [STANDARDS-TRACK]</t>
+                    </abstract>
+                </front>
+                <seriesInfo name="RFC" value="1334" />
+                <seriesInfo name="DOI" value="10.17487/RFC1334" />
+                <format type="ASCII" octets="33248" />
+            </reference>
+
+            <reference anchor="RFC1750"
+                target="http://www.rfc-editor.org/info/rfc1750">
+                <front>
+                    <title>Randomness Recommendations for Security</title>
+                    <author initials="D." surname="Eastlake 3rd"
+                        fullname="D. Eastlake 3rd">
+                        <organization />
+                    </author>
+                    <author initials="S." surname="Crocker"
+                        fullname="S. Crocker">
+                        <organization />
+                    </author>
+                    <author initials="J." surname="Schiller"
+                        fullname="J. Schiller">
+                        <organization />
+                    </author>
+                    <date year="1994" month="December" />
+                    <abstract>
+                        <t>Choosing random quantities to foil a
+                            resourceful and motivated
+                            adversary is surprisingly difficult. This paper points out many
+                            pitfalls in using traditional pseudo-random number generation
+                            techniques for choosing such quantities. It recommends the use of
+                            truly random hardware techniques and shows that the existing
+                            hardware on many systems can be used for this purpose. This memo
+                            provides information for the Internet community. This memo does
+                            not
+                            specify an Internet standard of any kind.</t>
+                    </abstract>
+                </front>
+                <seriesInfo name="RFC" value="1750" />
+                <seriesInfo name="DOI" value="10.17487/RFC1750" />
+                <format type="ASCII" octets="73842" />
+            </reference>
+
+            <reference anchor="RFC2433"
+                target="http://www.rfc-editor.org/info/rfc2433">
+                <front>
+                    <title>Microsoft PPP CHAP Extensions</title>
+                    <author initials="G." surname="Zorn"
+                        fullname="G. Zorn">
+                        <organization />
+                    </author>
+                    <author initials="S." surname="Cobb"
+                        fullname="S. Cobb">
+                        <organization />
+                    </author>
+                    <date year="1998" month="October" />
+                    <abstract>
+                        <t>The Point-to-Point Protocol (PPP) provides a
+                            standard method
+                            for
+                            transporting multi-protocol datagrams over point-to-point
+                            links.
+                            PPP defines an extensible Link Control Protocol and a
+                            family of
+                            Network Control Protocols (NCPs) for establishing and
+                            configuring
+                            different network-layer protocols. This memo provides
+                            information
+                            for the Internet community.</t>
+                    </abstract>
+                </front>
+                <seriesInfo name="RFC" value="2433" />
+                <seriesInfo name="DOI" value="10.17487/RFC2433" />
+                <format type="ASCII" octets="34502" />
+            </reference>
+            <reference anchor="RFC2759"
+                target="http://www.rfc-editor.org/info/rfc2759">
+                <front>
+                    <title>Microsoft PPP CHAP Extensions, Version 2</title>
+                    <author initials="G." surname="Zorn"
+                        fullname="G. Zorn">
+                        <organization />
+                    </author>
+                    <date year="2000" month="January" />
+                    <abstract>
+                        <t>This document describes version two of
+                            Microsoft's PPP CHAP
+                            dialect (MS-CHAP-V2). MS-CHAP-V2 is similar to, but incompatible
+                            with, MS-CHAP version one (MS-CHAP-V1). This memo provides
+                            information for the Internet community.</t>
+                    </abstract>
+                </front>
+                <seriesInfo name="RFC" value="2759" />
+                <seriesInfo name="DOI" value="10.17487/RFC2759" />
+                <format type="ASCII" octets="34178" />
+            </reference>
+            <reference anchor="RFC4279"
+                target="http://www.rfc-editor.org/info/rfc4279">
+                <front>
+                    <title>Pre-Shared Key Ciphersuites for Transport
+                        Layer Security
+                        (TLS)</title>
+                    <author initials="P." surname="Eronen"
+                        fullname="P. Eronen" role="editor">
+                        <organization />
+                    </author>
+                    <author initials="H." surname="Tschofenig"
+                        fullname="H. Tschofenig" role="editor">
+                        <organization />
+                    </author>
+                    <date year="2005" month="December" />
+                    <abstract>
+                        <t>This document specifies three sets of new
+                            ciphersuites for the
+                            Transport Layer Security (TLS) protocol to support authentication
+                            based on pre-shared keys (PSKs). These pre-shared keys are
+                            symmetric keys, shared in advance among the communicating
+                            parties. The first set of ciphersuites uses only symmetric key
+                            operations for authentication. The second set uses a
+                            Diffie-Hellman exchange authenticated with a pre-shared key, and
+                            the third set combines public key authentication of the server
+                            with pre-shared key authentication of the client.
+                            [STANDARDS-TRACK]</t>
+                    </abstract>
+                </front>
+                <seriesInfo name="RFC" value="4279" />
+                <seriesInfo name="DOI" value="10.17487/RFC4279" />
+                <format type="ASCII" octets="32160" />
+            </reference>
+            <reference anchor="RFC5246"
+                target="http://www.rfc-editor.org/info/rfc5246">
+                <front>
+                    <title>The Transport Layer Security (TLS) Protocol
+                        Version 1.2</title>
+                    <author initials="T." surname="Dierks"
+                        fullname="T. Dierks">
+                        <organization />
+                    </author>
+                    <author initials="E." surname="Rescorla"
+                        fullname="E. Rescorla">
+                        <organization />
+                    </author>
+                    <date year="2008" month="August" />
+                    <abstract>
+                        <t>This document specifies Version 1.2 of the
+                            Transport Layer
+                            Security (TLS) protocol. The TLS protocol provides communications
+                            security over the Internet. The protocol
+                            allows client/server
+                            applications to communicate in a way that is designed to prevent
+                            eavesdropping, tampering, or message
+                            forgery. [STANDARDS-TRACK]</t>
+                    </abstract>
+                </front>
+                <seriesInfo name="RFC" value="5246" />
+                <seriesInfo name="DOI" value="10.17487/RFC5246" />
+                <format type="ASCII" octets="222395" />
+            </reference>
+        </references>
+    </back>
+
+</rfc>
